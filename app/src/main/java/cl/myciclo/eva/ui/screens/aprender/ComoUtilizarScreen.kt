@@ -1,42 +1,31 @@
 package cl.myciclo.eva.ui.screens.aprender
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 
 @Composable
 fun ComoUtilizarScreen(onVolver: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFFF0F5))
-            .padding(24.dp)
-    ) {
-        Text(
-            text = "Cómo utilizar EVA",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF56328B)
-        )
+    ContenidoEducativo(
+        titulo = "📖 Cómo utilizar EVA",
+        introduccion = "EVA es un dispositivo reutilizable que permite observar una muestra de saliva seca con un microscopio de aumento 50x.",
+        secciones = listOf(
+            "1. Preparar la muestra" to
+                    "Toma una pequeña muestra de saliva desde una lengua limpia y deposítala en el portaobjeto del dispositivo.",
 
-        Spacer(modifier = Modifier.height(16.dp))
+            "2. Dejar secar" to
+                    "Espera hasta que la muestra esté completamente seca. La guía de MyCiclo indica un tiempo aproximado de una hora.",
 
-        Text(
-            text = "Próximamente encontrarás aquí la guía de uso de EVA.",
-            style = MaterialTheme.typography.bodyLarge
-        )
+            "3. Observar" to
+                    "Enciende EVA y observa la muestra con el aumento 50x. Busca patrones de gotas o estructuras de cristalización similares a helechos.",
 
-        Spacer(modifier = Modifier.height(24.dp))
+            "4. Registrar" to
+                    "Anota la fecha y el patrón observado para relacionarlo con el seguimiento de tu ciclo.",
 
-        Button(onClick = onVolver) {
-            Text("Volver a Aprender")
-        }
-    }
+            "🧼 Cuidar el dispositivo" to
+                    "Según la guía, el lente y el portaobjeto son de vidrio y se limpian con un paño, no con agua. EVA cuenta con batería recargable y conexión USB-C.",
+
+            "💜 Recordar" to
+                    "EVA observa cambios en la saliva; no mide hormonas directamente. No es un método anticonceptivo ni reemplaza la evaluación de un profesional de salud."
+        ),
+        onVolver = onVolver
+    )
 }

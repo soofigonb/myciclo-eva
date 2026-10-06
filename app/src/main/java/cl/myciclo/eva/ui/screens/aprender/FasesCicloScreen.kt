@@ -1,42 +1,28 @@
 package cl.myciclo.eva.ui.screens.aprender
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 
 @Composable
 fun FasesCicloScreen(onVolver: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFFF0F5))
-            .padding(24.dp)
-    ) {
-        Text(
-            text = "Fases del ciclo",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF56328B)
-        )
+    ContenidoEducativo(
+        titulo = "🔄 Fases del ciclo",
+        introduccion = "El ciclo se cuenta desde el primer día de sangrado hasta el día anterior a la siguiente menstruación. Su duración puede variar.",
+        secciones = listOf(
+            "🩸 Menstruación" to
+                    "Disminuyen los niveles de estrógeno y progesterona y se desprende el endometrio, produciendo el sangrado. La menstruación ocurre al comienzo de la fase folicular.",
 
-        Spacer(modifier = Modifier.height(16.dp))
+            "🌱 Fase folicular" to
+                    "Los folículos del ovario comienzan a desarrollarse. A medida que uno se vuelve dominante, aumenta la producción de estrógeno. Estos cambios pueden favorecer la aparición de cristalizaciones en la saliva.",
 
-        Text(
-            text = "Próximamente encontrarás aquí información sobre las fases del ciclo.",
-            style = MaterialTheme.typography.bodyLarge
-        )
+            "🌸 Ovulación" to
+                    "El aumento de la hormona luteinizante, conocida como LH, desencadena la liberación de un óvulo. El momento de la ovulación puede variar entre ciclos; EVA no confirma por sí sola que haya ocurrido.",
 
-        Spacer(modifier = Modifier.height(24.dp))
+            "🌙 Fase lútea" to
+                    "Después de la ovulación, el cuerpo lúteo produce progesterona. Si no se establece un embarazo, los niveles hormonales disminuyen y comienza una nueva menstruación.",
 
-        Button(onClick = onVolver) {
-            Text("Volver a Aprender")
-        }
-    }
+            "📅 Cada ciclo puede ser diferente" to
+                    "No todas las personas tienen ciclos de 28 días ni ovulan en la misma fecha. Registrar tus observaciones puede ayudarte a conocer los cambios de tu ciclo."
+        ),
+        onVolver = onVolver
+    )
 }
