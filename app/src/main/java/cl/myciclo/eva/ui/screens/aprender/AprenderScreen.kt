@@ -1,6 +1,7 @@
 package cl.myciclo.eva.ui.screens.aprender
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,11 +22,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AprenderScreen(modifier: Modifier = Modifier.Companion) {
+fun AprenderScreen(
+    modifier: Modifier = Modifier,
+    onComoUtilizarClick: () -> Unit,
+    onGuiaPatronesClick: () -> Unit,
+    onFasesCicloClick: () -> Unit,
+    onPreguntasFrecuentesClick: () -> Unit
+) {
     val morado = Color(0xFF56328B)
     val fondoRosado = Color(0xFFFFF0F5)
 
-    // Organiza el contenido verticalmente y permite desplazarlo.
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -52,40 +58,52 @@ fun AprenderScreen(modifier: Modifier = Modifier.Companion) {
 
         TarjetaEducativa(
             titulo = "Cómo utilizar EVA",
-            descripcion = "Conoce las funciones principales y aprende a utilizar EVA."
+            descripcion = "Conoce las funciones principales y aprende a utilizar EVA.",
+            onClick = onComoUtilizarClick
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         TarjetaEducativa(
             titulo = "Guía visual de patrones",
-            descripcion = "Consulta las referencias visuales de los patrones."
+            descripcion = "Consulta las referencias visuales de los patrones." ,
+            onClick = onGuiaPatronesClick
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         TarjetaEducativa(
             titulo = "Fases del ciclo",
-            descripcion = "Descubre las etapas del ciclo y qué sucede en cada una."
+            descripcion = "Descubre las etapas del ciclo y qué sucede en cada una.",
+            onClick = onFasesCicloClick
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         TarjetaEducativa(
             titulo = "Preguntas frecuentes",
-            descripcion = "Resuelve tus dudas sobre EVA y su uso."
+            descripcion = "Resuelve tus dudas sobre EVA y su uso.",
+            onClick = onPreguntasFrecuentesClick
         )
     }
 }
 
-// Reutiliza el mismo diseño para todas las tarjetas.
 @Composable
 private fun TarjetaEducativa(
     titulo: String,
-    descripcion: String
+    descripcion: String,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                }
+            ),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFFFFCFE)
