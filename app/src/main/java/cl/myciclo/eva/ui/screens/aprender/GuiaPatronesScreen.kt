@@ -1,42 +1,28 @@
 package cl.myciclo.eva.ui.screens.aprender
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 
 @Composable
 fun GuiaPatronesScreen(onVolver: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFFF0F5))
-            .padding(24.dp)
-    ) {
-        Text(
-            text = "Guía visual de patrones",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF56328B)
-        )
+    ContenidoEducativo(
+        titulo = "🔬 Guía de patrones",
+        introduccion = "Al secarse la saliva pueden aparecer distintas formas. EVA permite observarlas con aumento.",
+        secciones = listOf(
+            "💧 Gotas o ausencia de helechos" to
+                    "La guía describe muestras con patrones de gotas. Si no distingues estructuras similares a helechos, registra lo observado. Su ausencia no permite asegurar que no exista posibilidad de embarazo.",
 
-        Spacer(modifier = Modifier.height(16.dp))
+            "🌿 Estructuras similares a helechos" to
+                    "Son formas de cristalización ramificadas. Según el material de MyCiclo, su aparición puede relacionarse con cambios en la saliva asociados al aumento de estrógenos.",
 
-        Text(
-            text = "Próximamente encontrarás aquí las referencias visuales de los patrones.",
-            style = MaterialTheme.typography.bodyLarge
-        )
+            "👀 No todas las muestras son iguales" to
+                    "Los patrones pueden variar entre muestras. Observa la presencia de estructuras ramificadas y evita asumir que todas deben verse idénticas.",
 
-        Spacer(modifier = Modifier.height(24.dp))
+            "📝 Seguimiento con EVA" to
+                    "La guía de MyCiclo indica comenzar el seguimiento al observar el primer patrón de helechos y mantenerlo durante los ocho días siguientes. Esta es una indicación de seguimiento de EVA; no determina un día exacto de ovulación.",
 
-        Button(onClick = onVolver) {
-            Text("Volver a Aprender")
-        }
-    }
+            "💜 Interpretar con cuidado" to
+                    "Un patrón de helechos no confirma por sí solo que la ovulación ya ocurrió. EVA no es un método anticonceptivo. Consulta a un profesional ante dudas sobre salud o fertilidad."
+        ),
+        onVolver = onVolver
+    )
 }

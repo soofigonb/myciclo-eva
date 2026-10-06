@@ -1,25 +1,18 @@
 package cl.myciclo.eva.ui.screens.aprender
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun AprenderScreen(
@@ -30,80 +23,91 @@ fun AprenderScreen(
     onPreguntasFrecuentesClick: () -> Unit
 ) {
     val morado = Color(0xFF56328B)
-    val fondoRosado = Color(0xFFFFF0F5)
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(fondoRosado)
+            .background(Color(0xFFFFF0F5))
             .verticalScroll(rememberScrollState())
-            .padding(24.dp)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = "Aprender",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-            color = morado
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Aprender",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = morado
+                )
 
-        Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Guías para usar EVA",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = morado
+                )
+            }
 
-        Text(
-            text = "Guías para usar EVA",
-            style = MaterialTheme.typography.bodyLarge,
-            color = morado
-        )
+            Text(text = "🌿", fontSize = 32.sp)
+        }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         TarjetaEducativa(
+            emoji = "📖",
             titulo = "Cómo utilizar EVA",
-            descripcion = "Conoce las funciones principales y aprende a utilizar EVA.",
+            descripcion = "Aprende a preparar, observar y registrar tu muestra.",
             onClick = onComoUtilizarClick
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
-
         TarjetaEducativa(
+            emoji = "🔬",
             titulo = "Guía visual de patrones",
-            descripcion = "Consulta las referencias visuales de los patrones." ,
+            descripcion = "Conoce qué observar en las muestras de saliva.",
             onClick = onGuiaPatronesClick
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        TarjetaEducativa(
+            emoji = "🔄",
+            titulo = "Fases del ciclo",
+            descripcion = "Descubre los cambios que ocurren durante tu ciclo.",
+            onClick = onFasesCicloClick
+        )
 
         TarjetaEducativa(
-            titulo = "Fases del ciclo",
-            descripcion = "Descubre las etapas del ciclo y qué sucede en cada una.",
-            onClick = onFasesCicloClick
+            emoji = "💬",
+            titulo = "Preguntas frecuentes",
+            descripcion = "Resuelve tus dudas sobre EVA y su uso.",
+            onClick = onPreguntasFrecuentesClick
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        TarjetaEducativa(
-            titulo = "Preguntas frecuentes",
-            descripcion = "Resuelve tus dudas sobre EVA y su uso.",
-            onClick = onPreguntasFrecuentesClick
+        Text(
+            text = "Conocimiento es bienestar 💜",
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = morado
         )
     }
 }
 
 @Composable
 private fun TarjetaEducativa(
+    emoji: String,
     titulo: String,
     descripcion: String,
-    onClick: (() -> Unit)? = null
+    onClick: () -> Unit
 ) {
+    val morado = Color(0xFF56328B)
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(onClick = onClick)
-                } else {
-                    Modifier
-                }
-            ),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFFFFCFE)
@@ -112,22 +116,44 @@ private fun TarjetaEducativa(
             defaultElevation = 2.dp
         )
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = titulo,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF56328B)
-            )
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = Color(0xFFF0E1FA),
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = emoji, fontSize = 26.sp)
+            }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = titulo,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = morado
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = descripcion,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF665773)
+                )
+            }
 
             Text(
-                text = descripcion,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF665773)
+                text = "›",
+                fontSize = 28.sp,
+                color = morado
             )
         }
     }
