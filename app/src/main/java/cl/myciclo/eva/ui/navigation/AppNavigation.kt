@@ -13,6 +13,11 @@ import cl.myciclo.eva.ui.screens.ajustes.AjustesScreen
 import cl.myciclo.eva.ui.screens.calendario.CalendarioScreen
 import cl.myciclo.eva.ui.screens.historial.HistorialScreen
 import cl.myciclo.eva.ui.screens.inicio.InicioScreen
+import cl.myciclo.eva.ui.screens.aprender.AprenderScreen
+import cl.myciclo.eva.ui.screens.aprender.ComoUtilizarScreen
+import cl.myciclo.eva.ui.screens.aprender.GuiaPatronesScreen
+import cl.myciclo.eva.ui.screens.aprender.FasesCicloScreen
+import cl.myciclo.eva.ui.screens.aprender.PreguntasFrecuentesScreen
 
 @Composable
 fun AppNavigation(repository: CicloRepository) {
@@ -34,6 +39,50 @@ fun AppNavigation(repository: CicloRepository) {
             }
             composable(Screen.Historial.route) {
                 HistorialScreen(repository = repository)
+            }
+            composable(Screen.Aprender.route) {
+                AprenderScreen(
+                    onComoUtilizarClick = {
+                        navController.navigate(Screen.ComoUtilizar.route)
+                    },
+                    onGuiaPatronesClick = {
+                        navController.navigate(Screen.GuiaPatrones.route)
+                    },
+                    onFasesCicloClick = {
+                        navController.navigate(Screen.FasesCiclo.route)
+                    },
+                    onPreguntasFrecuentesClick = {
+                        navController.navigate(Screen.PreguntasFrecuentes.route)
+                    }
+                )
+            }
+            composable(Screen.ComoUtilizar.route) {
+                ComoUtilizarScreen(
+                    onVolver = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable(Screen.GuiaPatrones.route) {
+                GuiaPatronesScreen(
+                    onVolver = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable(Screen.FasesCiclo.route) {
+                FasesCicloScreen(
+                    onVolver = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable(Screen.PreguntasFrecuentes.route) {
+                PreguntasFrecuentesScreen(
+                    onVolver = {
+                        navController.popBackStack()
+                    }
+                )
             }
             composable(Screen.Ajustes.route) {
                 AjustesScreen()

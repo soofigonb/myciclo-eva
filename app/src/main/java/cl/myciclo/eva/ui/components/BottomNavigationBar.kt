@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import cl.myciclo.eva.ui.navigation.Screen
+import androidx.compose.material.icons.filled.Info
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
@@ -17,6 +18,7 @@ fun BottomNavigationBar(navController: NavController) {
         Screen.Inicio to Icons.Default.Home,
         Screen.Calendario to Icons.Default.DateRange,
         Screen.Historial to Icons.Default.List,
+        Screen.Aprender to Icons.Default.Info,
         Screen.Ajustes to Icons.Default.Settings
     )
 
