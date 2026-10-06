@@ -19,9 +19,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyCicloEVATheme {
+                val mesActual = java.time.YearMonth.now()
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                    Text(
+                        text = "Calendario Base - ${mesActual} ${mesActual.year}",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
