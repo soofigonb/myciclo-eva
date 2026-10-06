@@ -1,7 +1,7 @@
 package cl.myciclo.eva.data.dao
 
 import androidx.room.*
-import cl.myciclo.eva.data.entities.InicioMenstrualEntity
+import com.equipo.myciclo.data.local.entities.InicioMenstrualEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

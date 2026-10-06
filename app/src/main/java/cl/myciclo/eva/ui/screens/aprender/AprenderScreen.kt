@@ -1,4 +1,4 @@
-package cl.myciclo.eva.ui.screens
+package cl.myciclo.eva.ui.screens.aprender
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AprenderScreen(modifier: Modifier = Modifier) {
+fun AprenderScreen(modifier: Modifier = Modifier.Companion) {
     val morado = Color(0xFF56328B)
     val fondoRosado = Color(0xFFFFF0F5)
 

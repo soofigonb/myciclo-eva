@@ -5,8 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cl.myciclo.eva.data.dao.InicioMenstrualDao
-import cl.myciclo.eva.data.entities.InicioMenstrualEntity
-import com.equipo.myciclo.data.local.entities.RegistroDiarioEntity
+import com.equipo.myciclo.data.local.entities.InicioMenstrualEntity
+import cl.myciclo.data.entities.RegistroDiarioEntity
 
 @Database(
     entities = [InicioMenstrualEntity::class,
