@@ -1,7 +1,7 @@
 package cl.myciclo.eva.data.repository
 
 import cl.myciclo.eva.data.dao.InicioMenstrualDao
-import cl.myciclo.eva.data.entities.InicioMenstrualEntity
+import com.equipo.myciclo.data.local.entities.InicioMenstrualEntity
 import kotlinx.coroutines.flow.Flow
 
 class CicloRepository(private val inicioDao: InicioMenstrualDao) {
