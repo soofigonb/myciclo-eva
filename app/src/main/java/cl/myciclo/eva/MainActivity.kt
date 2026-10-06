@@ -1,47 +1,26 @@
+
 package cl.myciclo.eva
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import cl.myciclo.eva.ui.theme.MyCicloEVATheme
-import cl.myciclo.eva.ui.screens.AprenderScreen
+import cl.myciclo.eva.data.MyCicloDatabase
+import cl.myciclo.eva.data.repository.CicloRepository
+import cl.myciclo.eva.ui.navigation.AppNavigation
+import cl.myciclo.eva.ui.theme.MyCicloEvaTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        // Inicialización de la base de datos y repositorio del módulo de Jonathan
+        val database = MyCicloDatabase.getDatabase(applicationContext)
+        val repository = CicloRepository(database.inicioMenstrualDao())
+
         setContent {
-            MyCicloEVATheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    AprenderScreen(
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+            MyCicloEvaTheme {
+                AppNavigation(repository = repository)
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MyCicloEVATheme {
-        Greeting("Android")
     }
 }
