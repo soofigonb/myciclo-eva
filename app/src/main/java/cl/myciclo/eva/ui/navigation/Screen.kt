@@ -1,6 +1,9 @@
 package cl.myciclo.eva.ui.navigation
 
 sealed class Screen(val route: String, val title: String) {
+    object Bienvenida : Screen("bienvenida", "Bienvenida")
+    object Login : Screen("login", "Iniciar sesión")
+    object Registro : Screen("registro", "Crear cuenta")
     object Inicio : Screen("inicio", "Inicio")
     object Calendario : Screen("calendario", "Calendario")
     object Historial : Screen("historial", "Historial")
