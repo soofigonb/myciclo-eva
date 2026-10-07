@@ -18,19 +18,85 @@ import cl.myciclo.eva.ui.screens.aprender.ComoUtilizarScreen
 import cl.myciclo.eva.ui.screens.aprender.GuiaPatronesScreen
 import cl.myciclo.eva.ui.screens.aprender.FasesCicloScreen
 import cl.myciclo.eva.ui.screens.aprender.PreguntasFrecuentesScreen
+import androidx.compose.runtime.getValue
+import androidx.navigation.compose.currentBackStackEntryAsState
+import cl.myciclo.eva.ui.screens.auth.LoginScreen
+import cl.myciclo.eva.ui.screens.auth.RegistroScreen
+import cl.myciclo.eva.ui.screens.auth.BienvenidaScreen
 
 @Composable
 fun AppNavigation(repository: CicloRepository) {
     val navController = rememberNavController()
 
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val rutaActual = backStackEntry?.destination?.route
+
+    val mostrarBarraInferior =
+        rutaActual != null &&
+                rutaActual != Screen.Bienvenida.route &&
+                rutaActual != Screen.Login.route &&
+                rutaActual != Screen.Registro.route
+
     Scaffold(
-        bottomBar = { BottomNavigationBar(navController = navController) }
+        bottomBar = {
+            if (mostrarBarraInferior) {
+                BottomNavigationBar(navController = navController)
+            }
+        }
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Inicio.route,
+            startDestination = Screen.Bienvenida.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Screen.Bienvenida.route) {
+                BienvenidaScreen(
+                    onIniciarSesion = {
+                        navController.navigate(Screen.Login.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onCrearCuenta = {
+                        navController.navigate(Screen.Registro.route) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    onRegistro = {
+                        navController.navigate(Screen.Registro.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onExplorar = {
+                        navController.navigate(Screen.Inicio.route) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.Registro.route) {
+                RegistroScreen(
+                    onVolver = {
+                        val regresoAlLogin =
+                            navController.popBackStack(
+                                Screen.Login.route,
+                                false
+                            )
+
+                        if (!regresoAlLogin) {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Bienvenida.route) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                )
+            }
             composable(Screen.Inicio.route) {
                 InicioScreen(repository = repository)
             }
