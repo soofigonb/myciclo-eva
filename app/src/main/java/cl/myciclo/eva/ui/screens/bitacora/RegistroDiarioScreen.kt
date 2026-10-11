@@ -253,6 +253,29 @@ fun RegistroDiarioScreen(
             )
         }
 
+        // Previsualización de la fotografía seleccionada (Lente EVA)
+        if (imagen != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Black)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "🔬 Muestra EVA cargada correctamente\nURI: ${imagen.toString().takeLast(35)}",
+                        color = Color.White,
+                        modifier = Modifier.padding(12.dp),
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(4.dp))
 
         Button(
