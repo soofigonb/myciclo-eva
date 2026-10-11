@@ -1,7 +1,9 @@
 package cl.myciclo.eva.ui.screens.bitacora
 
+import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -36,13 +38,25 @@ fun RegistroDiarioScreen(
     var flujoVaginal by remember { mutableStateOf("Normal") }
     var notas by remember { mutableStateOf("") }
 
-    // Estado y lanzador para la fotografía de la muestra
+    // Estado para la fotografía (URI o referencia)
     var imagen by remember { mutableStateOf<String?>(null) }
+
+    // Lanzador para la Galería
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
             imagen = uri.toString()
+        }
+    }
+
+    // Lanzador para la Cámara (Captura rápida en miniatura / Bitmap)
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            // Aquí puedes manejar el bitmap de la cámara o guardarlo localmente
+            imagen = "Cámara EVA (Captura exitosa)"
         }
     }
 
@@ -241,24 +255,36 @@ fun RegistroDiarioScreen(
             }
         }
 
-        OutlinedButton(
-            onClick = { galleryLauncher.launch("image/*") },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = morado)
+        // Botones para cámara y galería
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = if (imagen == null) "📷 Adjuntar fotografía de la muestra" else "✅ Fotografía seleccionada",
-                fontWeight = FontWeight.Bold
-            )
+            OutlinedButton(
+                onClick = { cameraLauncher.launch() },
+                modifier = Modifier.weight(1f).height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = morado)
+            ) {
+                Text(text = "📸 Usar Cámara", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+
+            OutlinedButton(
+                onClick = { galleryLauncher.launch("image/*") },
+                modifier = Modifier.weight(1f).height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = morado)
+            ) {
+                Text(text = "🖼️ Galería", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
         }
 
-        // Previsualización de la fotografía seleccionada (Lente EVA)
+        // Previsualización de la fotografía seleccionada o tomada
         if (imagen != null) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(110.dp),
+                    .height(90.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.Black)
             ) {
@@ -267,10 +293,10 @@ fun RegistroDiarioScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "🔬 Muestra EVA cargada correctamente\nURI: ${imagen.toString().takeLast(35)}",
+                        text = "🔬 Fotografía adjunta:\n$imagen",
                         color = Color.White,
-                        modifier = Modifier.padding(12.dp),
-                        fontSize = 13.sp
+                        modifier = Modifier.padding(8.dp),
+                        fontSize = 12.sp
                     )
                 }
             }
