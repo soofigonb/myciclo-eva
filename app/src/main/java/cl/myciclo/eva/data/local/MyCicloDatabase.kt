@@ -1,21 +1,26 @@
-package cl.myciclo.eva.data
+package cl.myciclo.eva.data.local
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import cl.myciclo.eva.data.dao.InicioMenstrualDao
-import com.equipo.myciclo.data.local.entities.InicioMenstrualEntity
-import cl.myciclo.data.entities.RegistroDiarioEntity
+import cl.myciclo.eva.data.local.dao.RegistroDiarioDao
+import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
+import cl.myciclo.eva.data.local.entities.RegistroDiarioEntity
 
 @Database(
-    entities = [InicioMenstrualEntity::class,
-                RegistroDiarioEntity::class],
+    entities = [
+        InicioMenstrualEntity::class,
+        RegistroDiarioEntity::class
+    ],
     version = 1,
     exportSchema = false
 )
 abstract class MyCicloDatabase : RoomDatabase() {
+
     abstract fun inicioMenstrualDao(): InicioMenstrualDao
+    abstract fun registroDiarioDao(): RegistroDiarioDao
 
     companion object {
         @Volatile

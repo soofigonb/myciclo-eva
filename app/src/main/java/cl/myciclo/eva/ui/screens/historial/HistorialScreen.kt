@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cl.myciclo.eva.data.repository.CicloRepository
+import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 
 @Composable
 fun HistorialScreen(repository: CicloRepository) {
