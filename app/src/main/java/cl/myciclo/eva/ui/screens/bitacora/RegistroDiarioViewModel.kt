@@ -1,4 +1,4 @@
-package cl.myciclo.eva.ui.screens.bitacora // Ajusta el paquete según tu carpeta actual
+package cl.myciclo.eva.ui.screens.bitacora
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,7 +15,8 @@ class RegistroDiarioViewModel(private val repository: CicloRepository) : ViewMod
         sintomas: String,
         flujoMenstrual: String,
         flujoVaginal: String,
-        notas: String
+        notas: String,
+        fotoPath: String? = null
     ) {
         viewModelScope.launch {
             val nuevoRegistro = RegistroDiarioEntity(
@@ -25,7 +26,8 @@ class RegistroDiarioViewModel(private val repository: CicloRepository) : ViewMod
                 sintomas = sintomas,
                 flujoMenstrual = flujoMenstrual,
                 flujoVaginal = flujoVaginal,
-                notas = notas
+                notas = notas,
+                fotoPath = fotoPath
             )
             repository.registrarDiario(nuevoRegistro)
         }
