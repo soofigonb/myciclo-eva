@@ -13,11 +13,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cl.myciclo.eva.data.repository.CicloRepository
 
 @Composable
 fun RegistroDiarioScreen(
+    repository: CicloRepository,
     modifier: Modifier = Modifier
 ) {
+    val viewModel = remember { RegistroDiarioViewModel(repository) }
+
     val morado = Color(0xFF56328B)
     val fondoRosa = Color(0xFFFFF0F5)
     val tarjetaBlanca = Color(0xFFFFFCFE)
@@ -237,7 +241,17 @@ fun RegistroDiarioScreen(
         Spacer(modifier = Modifier.height(4.dp))
 
         Button(
-            onClick = { /* TODO: Guardar en Room usando RegistroDiarioDao */ },
+            onClick = {
+                viewModel.guardarRegistro(
+                    fechaIso = fecha,
+                    patron = patron,
+                    estadoAnimo = estadoAnimo,
+                    sintomas = sintomas,
+                    flujoMenstrual = flujoMenstrual,
+                    flujoVaginal = flujoVaginal,
+                    notas = notas
+                )
+            },
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = morado)
@@ -250,5 +264,7 @@ fun RegistroDiarioScreen(
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, heightDp = 1200)
 @Composable
 fun RegistroDiarioScreenPreview() {
-    RegistroDiarioScreen()
+    // si se tiene una instancia de base de datos o contexto de prueba para la preview,
+    // se puede pasar un repositorio falso o temporal para que renderice el diseño:
+    // RegistroDiarioScreen(repository = /*  repositorio de prueba o mock */)
 }
