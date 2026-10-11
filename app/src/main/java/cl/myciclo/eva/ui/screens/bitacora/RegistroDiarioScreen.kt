@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun RegistroScreen(
+fun RegistroDiarioScreen(
     modifier: Modifier = Modifier
 ) {
     val morado = Color(0xFF56328B)
@@ -23,8 +23,11 @@ fun RegistroScreen(
     val tarjetaBlanca = Color(0xFFFFFCFE)
 
     var fecha by remember { mutableStateOf("10/10/2026") }
-    var patronHelechos by remember { mutableStateOf("Gotas") }
+    var patron by remember { mutableStateOf("Gotas") }
     var sintomas by remember { mutableStateOf("") }
+    var estadoAnimo by remember { mutableStateOf("Tranquila") }
+    var flujoMenstrual by remember { mutableStateOf("Ninguno") }
+    var flujoVaginal by remember { mutableStateOf("Normal") }
     var notas by remember { mutableStateOf("") }
 
     Column(
@@ -66,7 +69,7 @@ fun RegistroScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "📅 Fecha de Registro",
+                    text = "📅 Fecha de registro",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = morado
@@ -90,7 +93,7 @@ fun RegistroScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "🔬 Patrón Observado (EVA 50x)",
+                    text = "🔬 Patrón observado (EVA 50x)",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = morado
@@ -101,36 +104,102 @@ fun RegistroScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = { patronHelechos = "Gotas" },
+                        onClick = { patron = "Gotas" },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (patronHelechos == "Gotas") morado else Color(0xFFF0E1FA)
+                            containerColor = if (patron == "Gotas") morado else Color(0xFFF0E1FA)
                         ),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
                             text = "Gotas",
-                            color = if (patronHelechos == "Gotas") Color.White else morado
+                            color = if (patron == "Gotas") Color.White else morado
                         )
                     }
                     Button(
-                        onClick = { patronHelechos = "Helechos" },
+                        onClick = { patron = "Helechos" },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (patronHelechos == "Helechos") morado else Color(0xFFF0E1FA)
+                            containerColor = if (patron == "Helechos") morado else Color(0xFFF0E1FA)
                         ),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
                             text = "Helechos",
-                            color = if (patronHelechos == "Helechos") Color.White else morado
+                            color = if (patron == "Helechos") Color.White else morado
                         )
                     }
                 }
             }
         }
 
-        // Tarjeta de Síntomas y Notas
+        // Tarjeta de Estado de ánimo y síntomas
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = tarjetaBlanca),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "😊 Estado de ánimo y síntomas",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = morado
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = estadoAnimo,
+                    onValueChange = { estadoAnimo = it },
+                    label = { Text("Estado de ánimo (ej. Feliz, Cansada)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = sintomas,
+                    onValueChange = { sintomas = it },
+                    label = { Text("Síntomas físicos (ej. cólicos, dolor)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        // Tarjeta de flujos
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = tarjetaBlanca),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "🩸 Registro de flujos",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = morado
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = flujoMenstrual,
+                    onValueChange = { flujoMenstrual = it },
+                    label = { Text("Flujo menstrual (ej. Abundante, Escaso)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = flujoVaginal,
+                    onValueChange = { flujoVaginal = it },
+                    label = { Text("Flujo vaginal (ej. Normal, Elástico)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        // Tarjeta de notas y observaciones
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(18.dp),
@@ -143,14 +212,6 @@ fun RegistroScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = morado
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = sintomas,
-                    onValueChange = { sintomas = it },
-                    label = { Text("Síntomas físicos (ej. cólicos)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
@@ -176,19 +237,18 @@ fun RegistroScreen(
         Spacer(modifier = Modifier.height(4.dp))
 
         Button(
-            onClick = { /* TODO: Guardar en Room */ },
+            onClick = { /* TODO: Guardar en Room usando RegistroDiarioDao */ },
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = morado)
         ) {
             Text("Guardar Registro Diario", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
-
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true, heightDp = 1200)
 @Composable
-fun RegistroScreenPreview() {
-    RegistroScreen()
+fun RegistroDiarioScreenPreview() {
+    RegistroDiarioScreen()
 }

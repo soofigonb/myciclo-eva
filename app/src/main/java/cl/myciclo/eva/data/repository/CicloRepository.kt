@@ -1,7 +1,7 @@
 package cl.myciclo.eva.data.repository
 
 import cl.myciclo.eva.data.dao.InicioMenstrualDao
-import com.equipo.myciclo.data.local.entities.InicioMenstrualEntity
+import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 import kotlinx.coroutines.flow.Flow
 
 class CicloRepository(private val inicioDao: InicioMenstrualDao) {
@@ -10,7 +10,6 @@ class CicloRepository(private val inicioDao: InicioMenstrualDao) {
     suspend fun registrarInicioMenstrual(fechaIso: String) {
         inicioDao.insertarInicio(InicioMenstrualEntity(fechaIso = fechaIso))
     }
-
     suspend fun obtenerUltimoInicio(): InicioMenstrualEntity? {
         return inicioDao.obtenerUltimoInicio()
     }
