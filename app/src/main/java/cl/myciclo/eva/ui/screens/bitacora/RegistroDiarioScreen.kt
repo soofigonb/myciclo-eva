@@ -1,5 +1,7 @@
 package cl.myciclo.eva.ui.screens.bitacora
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -33,6 +35,16 @@ fun RegistroDiarioScreen(
     var flujoMenstrual by remember { mutableStateOf("Ninguno") }
     var flujoVaginal by remember { mutableStateOf("Normal") }
     var notas by remember { mutableStateOf("") }
+
+    // Estado y lanzador para la fotografía de la muestra
+    var imagen by remember { mutableStateOf<String?>(null) }
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            imagen = uri.toString()
+        }
+    }
 
     Column(
         modifier = modifier
@@ -212,7 +224,7 @@ fun RegistroDiarioScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "📝 Detalles y Notas",
+                    text = "📝 Detalles y notas",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = morado
@@ -230,12 +242,15 @@ fun RegistroDiarioScreen(
         }
 
         OutlinedButton(
-            onClick = { /* TODO: Cámara o galería */ },
+            onClick = { galleryLauncher.launch("image/*") },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = morado)
         ) {
-            Text("📷 Adjuntar fotografía de la muestra", fontWeight = FontWeight.Bold)
+            Text(
+                text = if (imagen == null) "📷 Adjuntar fotografía de la muestra" else "✅ Fotografía seleccionada",
+                fontWeight = FontWeight.Bold
+            )
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -249,7 +264,8 @@ fun RegistroDiarioScreen(
                     sintomas = sintomas,
                     flujoMenstrual = flujoMenstrual,
                     flujoVaginal = flujoVaginal,
-                    notas = notas
+                    notas = notas,
+                    fotoPath = imagen
                 )
             },
             modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -257,18 +273,10 @@ fun RegistroDiarioScreen(
             colors = ButtonDefaults.buttonColors(containerColor = morado)
         ) {
             Text(
-                "Guardar Registro Diario",
+                "Guardar registro diario",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
         }
     }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true, heightDp = 1200)
-@Composable
-fun RegistroDiarioScreenPreview() {
-    // si se tiene una instancia de base de datos o contexto de prueba para la preview,
-    // se puede pasar un repositorio falso o temporal para que renderice el diseño:
-    // RegistroDiarioScreen(repository = /*  repositorio de prueba o mock */)
 }
