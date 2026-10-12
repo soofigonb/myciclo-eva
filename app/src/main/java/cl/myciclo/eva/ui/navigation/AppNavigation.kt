@@ -101,7 +101,13 @@ fun AppNavigation(repository: CicloRepository) {
                 InicioScreen(repository = repository)
             }
             composable(Screen.Calendario.route) {
-                CalendarioScreen(repository = repository)
+                CalendarioScreen(
+                    repository = repository,
+                    onRegistroClick = { fechaIso ->
+                        // Aquí puedes manejar la navegación al hacer clic en un día,
+                        // por ejemplo: navController.navigate("detalle_registro/$fechaIso")
+                    }
+                )
             }
             composable(Screen.Historial.route) {
                 HistorialScreen(repository = repository)
