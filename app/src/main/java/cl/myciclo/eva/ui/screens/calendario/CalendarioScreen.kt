@@ -13,12 +13,13 @@ import androidx.compose.ui.unit.dp
 import cl.myciclo.eva.data.repository.CicloRepository
 import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 
+import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 @Composable
 fun CalendarioScreen(repository: CicloRepository) {
     val viewModel = remember { CalendarioViewModel(repository) }
     val inicios = viewModel.inicios.collectAsState(initial = emptyList<InicioMenstrualEntity>()).value
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(all = 16.dp)) {
         Text("Calendario de Ciclos", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -33,7 +34,7 @@ fun CalendarioScreen(repository: CicloRepository) {
                     ) {
                         Text(
                             text = "Inicio de periodo: ${inicio.fechaIso}",
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(all = 16.dp)
                         )
                     }
                 }

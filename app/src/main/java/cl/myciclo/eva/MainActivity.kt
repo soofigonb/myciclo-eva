@@ -12,12 +12,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicialización de la base de datos y repositorio del módulo de Jonathan
+        // 1. Obtención de instancia de la base de datos de Room
         val database = MyCicloDatabase.getDatabase(applicationContext)
-        val repository = CicloRepository(database.inicioMenstrualDao())
+
+        // 2. Creación del repositorio pasando el DAO que pide Room
+        val repository = CicloRepository(
+            inicioDao = database.inicioMenstrualDao(),
+            registroDiarioDao = database.registroDiarioDao()
+        )
 
         setContent {
             MyCicloEVATheme {
+                // Pasamos el repositorio a navegación o pantallas principales
                 AppNavigation(repository = repository)
             }
         }

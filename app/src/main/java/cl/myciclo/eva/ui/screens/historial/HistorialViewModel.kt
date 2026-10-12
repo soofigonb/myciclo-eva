@@ -2,6 +2,7 @@ package cl.myciclo.eva.ui.screens.historial
 
 import androidx.lifecycle.ViewModel
 import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
+import cl.myciclo.eva.data.local.entities.RegistroDiarioEntity
 import cl.myciclo.eva.data.repository.CicloRepository
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
@@ -14,6 +15,9 @@ data class DuracionCiclo(
 
 class HistorialViewModel(repository: CicloRepository) : ViewModel() {
     val inicios: Flow<List<InicioMenstrualEntity>> = repository.todosLosInicios
+
+    // Se agrega el flujo para leer los registros diarios de la bitácora
+    val registrosDiarios: Flow<List<RegistroDiarioEntity>> = repository.todosLosRegistrosDiarios
 
     fun calcularDuraciones(lista: List<InicioMenstrualEntity>): List<DuracionCiclo> {
         val resultado = mutableListOf<DuracionCiclo>()
