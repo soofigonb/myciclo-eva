@@ -11,11 +11,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cl.myciclo.eva.data.repository.CicloRepository
+import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 
 @Composable
 fun CalendarioScreen(repository: CicloRepository) {
     val viewModel = remember { CalendarioViewModel(repository) }
-    val inicios by viewModel.inicios.collectAsState(initial = emptyList())
+    val inicios = viewModel.inicios.collectAsState(initial = emptyList<InicioMenstrualEntity>()).value
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Calendario de Ciclos", style = MaterialTheme.typography.headlineSmall)
@@ -25,7 +26,8 @@ fun CalendarioScreen(repository: CicloRepository) {
             Text("No se han registrado fechas en el calendario.")
         } else {
             LazyColumn {
-                items(inicios) { inicio ->
+                items(inicios.size) { index ->
+                    val inicio = inicios[index]
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                     ) {

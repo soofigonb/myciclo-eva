@@ -7,12 +7,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 import cl.myciclo.eva.data.repository.CicloRepository
 
 @Composable
 fun HistorialScreen(repository: CicloRepository) {
     val viewModel = remember { HistorialViewModel(repository) }
-    val inicios by viewModel.inicios.collectAsState(initial = emptyList())
+    val inicios = viewModel.inicios.collectAsState(initial = emptyList<InicioMenstrualEntity>()).value
     val duraciones = remember(inicios) { viewModel.calcularDuraciones(inicios) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {

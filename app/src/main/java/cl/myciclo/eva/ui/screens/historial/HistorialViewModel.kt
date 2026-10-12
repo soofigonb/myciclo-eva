@@ -1,7 +1,7 @@
 package cl.myciclo.eva.ui.screens.historial
 
 import androidx.lifecycle.ViewModel
-import cl.myciclo.eva.data.entities.InicioMenstrualEntity
+import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 import cl.myciclo.eva.data.repository.CicloRepository
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate

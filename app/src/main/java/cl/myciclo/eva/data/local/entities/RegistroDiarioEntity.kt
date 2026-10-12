@@ -1,4 +1,4 @@
-package cl.myciclo.data.entities
+package cl.myciclo.eva.data.local.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

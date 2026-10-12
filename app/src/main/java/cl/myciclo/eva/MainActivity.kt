@@ -1,13 +1,12 @@
-
 package cl.myciclo.eva
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import cl.myciclo.eva.data.MyCicloDatabase
+import cl.myciclo.eva.data.local.MyCicloDatabase
 import cl.myciclo.eva.data.repository.CicloRepository
 import cl.myciclo.eva.ui.navigation.AppNavigation
-import cl.myciclo.eva.ui.theme.MyCicloEvaTheme
+import cl.myciclo.eva.ui.theme.MyCicloEVATheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,7 +17,7 @@ class MainActivity : ComponentActivity() {
         val repository = CicloRepository(database.inicioMenstrualDao())
 
         setContent {
-            MyCicloEvaTheme {
+            MyCicloEVATheme {
                 AppNavigation(repository = repository)
             }
         }
