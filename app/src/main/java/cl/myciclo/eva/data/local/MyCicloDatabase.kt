@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import cl.myciclo.eva.data.dao.InicioMenstrualDao
+import cl.myciclo.eva.data.local.dao.InicioMenstrualDao
 import cl.myciclo.eva.data.local.dao.RegistroDiarioDao
 import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 import cl.myciclo.eva.data.local.entities.RegistroDiarioEntity

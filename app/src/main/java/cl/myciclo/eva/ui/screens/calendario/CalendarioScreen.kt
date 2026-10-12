@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import cl.myciclo.eva.data.repository.CicloRepository
 import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 
-import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity
 @Composable
 fun CalendarioScreen(repository: CicloRepository) {
     val viewModel = remember { CalendarioViewModel(repository) }
