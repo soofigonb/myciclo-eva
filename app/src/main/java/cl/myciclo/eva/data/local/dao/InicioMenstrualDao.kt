@@ -1,4 +1,4 @@
-package cl.myciclo.eva.data.dao
+package cl.myciclo.eva.data.local.dao
 
 import androidx.room.*
 import cl.myciclo.eva.data.local.entities.InicioMenstrualEntity

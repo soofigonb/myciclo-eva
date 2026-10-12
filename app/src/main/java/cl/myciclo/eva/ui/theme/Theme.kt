@@ -9,35 +9,35 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
-    tertiary = Pink80
+    tertiary = Pink80,
+    background = Color(0xFF1C1B1F),
+    surface = Color(0xFF25232A)
 )
 
+// Esquema de colores de la app con los tonos de tus compañeras
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = MoradoEva,            // 0xFF56328B (Morado de tus compañeras)
+    onPrimary = Blanco,
+    secondary = RosaAcentoEva,      // 0xFFC93C6E (Acento/Botones secundarios)
+    onSecondary = Blanco,
+    background = RosaFondoEva,      // 0xFFFFF0F5 (Fondo rosado de tus compañeras)
+    surface = Blanco,               // Fondo para Tarjetas (Cards)
+    onBackground = TextoOscuro,     // Texto legible sobre fondo rosado
+    onSurface = TextoOscuro,        // Texto legible sobre tarjetas blancas
+    outline = GrisBorde
 )
 
 @Composable
 fun MyCicloEVATheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Cambiado a false por defecto para que Android 12+ respete tus colores y no los del sistema
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -56,3 +56,28 @@ fun MyCicloEVATheme(
         content = content
     )
 }
+
+/*import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+
+private val LightColors = lightColorScheme(
+    primary = EvaPrimary,
+    onPrimary = EvaOnPrimary,
+    secondary = EvaSecondary,
+    background = EvaBackground,
+    surface = EvaCard,
+    onBackground = EvaText,
+    onSurface = EvaText,
+
+)
+@Composable
+fun MyCicloEVATheme(
+    content: @Composable () -> Unit
+) {
+    MaterialTheme(
+        colorScheme = LightColors,
+        typography = Typography,
+        content = content
+    )
+}*/
