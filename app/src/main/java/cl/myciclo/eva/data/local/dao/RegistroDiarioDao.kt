@@ -14,11 +14,22 @@ interface RegistroDiarioDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarRegistro(registro: RegistroDiarioEntity)
 
-    @Query(value = "SELECT * FROM registros_diarios ORDER BY fechaIso DESC")
+    @Query("SELECT * FROM registros_diarios ORDER BY fechaIso DESC")
     fun obtenerTodosLosRegistros(): Flow<List<RegistroDiarioEntity>>
 
-    @Query(value = "SELECT * FROM registros_diarios WHERE fechaIso = :fecha LIMIT 1")
-    suspend fun obtenerRegistroPorFecha(fecha: String): RegistroDiarioEntity?
+    @Query(
+        "SELECT * FROM registros_diarios " +
+                "WHERE fechaIso = :fecha LIMIT 1"
+    )
+    suspend fun obtenerRegistroPorFecha(
+        fecha: String
+    ): RegistroDiarioEntity?
+
+    @Query(
+        "SELECT fotoPath FROM registros_diarios " +
+                "WHERE fotoPath IS NOT NULL"
+    )
+    suspend fun obtenerRutasFotografias(): List<String>
 
     @Delete
     suspend fun eliminarRegistro(registro: RegistroDiarioEntity)

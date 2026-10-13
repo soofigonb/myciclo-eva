@@ -9,21 +9,22 @@ import cl.myciclo.eva.ui.navigation.AppNavigation
 import cl.myciclo.eva.ui.theme.MyCicloEVATheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Obtención de instancia de la base de datos de Room
-        val database = MyCicloDatabase.getDatabase(applicationContext)
+        val database = MyCicloDatabase.getDatabase(
+            applicationContext
+        )
 
-        // 2. Creación del repositorio pasando el DAO que pide Room
         val repository = CicloRepository(
             inicioDao = database.inicioMenstrualDao(),
-            registroDiarioDao = database.registroDiarioDao()
+            registroDiarioDao = database.registroDiarioDao(),
+            context = applicationContext
         )
 
         setContent {
             MyCicloEVATheme {
-                // Pasamos el repositorio a navegación o pantallas principales
                 AppNavigation(repository = repository)
             }
         }
