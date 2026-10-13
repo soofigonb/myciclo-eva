@@ -13,9 +13,11 @@ import java.time.LocalDate
 data class RegistroDiarioEstado(
     val cargando: Boolean = true,
     val guardando: Boolean = false,
+    val eliminando: Boolean = false,
     val registro: RegistroDiarioEntity? = null,
     val error: String? = null,
-    val guardado: Boolean = false
+    val guardado: Boolean = false,
+    val eliminado: Boolean = false
 )
 
 class RegistroDiarioViewModel(
@@ -31,18 +33,16 @@ class RegistroDiarioViewModel(
     }
 
     fun cargarRegistro() {
+        if (_estado.value.guardando || _estado.value.eliminando) return
+
         viewModelScope.launch {
             _estado.value = RegistroDiarioEstado(cargando = true)
 
             try {
                 val fecha = LocalDate.parse(fechaIso)
 
-                if (fecha.isAfter(LocalDate.now())) {
-                    _estado.value = RegistroDiarioEstado(
-                        cargando = false,
-                        error = "No puedes registrar una fecha futura."
-                    )
-                    return@launch
+                require(!fecha.isAfter(LocalDate.now())) {
+                    "No puedes registrar una fecha futura."
                 }
 
                 val registro = repository.obtenerRegistroPorFecha(fechaIso)
@@ -53,10 +53,15 @@ class RegistroDiarioViewModel(
                 )
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: IllegalArgumentException) {
+                _estado.value = RegistroDiarioEstado(
+                    cargando = false,
+                    error = e.message ?: "Revisa la fecha seleccionada."
+                )
             } catch (e: Exception) {
                 _estado.value = RegistroDiarioEstado(
                     cargando = false,
-                    error = "No se pudo cargar el registro. Revisa la fecha e intenta nuevamente."
+                    error = "No se pudo cargar el registro. Intenta nuevamente."
                 )
             }
         }
@@ -71,15 +76,24 @@ class RegistroDiarioViewModel(
         notas: String,
         fotoPath: String?
     ) {
-        if (_estado.value.cargando || _estado.value.guardando) return
+        val actual = _estado.value
+
+        if (
+            actual.cargando ||
+            actual.guardando ||
+            actual.eliminando ||
+            actual.guardado ||
+            actual.eliminado
+        ) return
+
+        // Bloquea otros intentos antes de iniciar la operación.
+        _estado.value = actual.copy(
+            guardando = true,
+            error = null,
+            guardado = false
+        )
 
         viewModelScope.launch {
-            _estado.value = _estado.value.copy(
-                guardando = true,
-                error = null,
-                guardado = false
-            )
-
             try {
                 val fecha = LocalDate.parse(fechaIso)
 
@@ -110,6 +124,7 @@ class RegistroDiarioViewModel(
                     guardado = true
                 )
             } catch (e: CancellationException) {
+                _estado.value = _estado.value.copy(guardando = false)
                 throw e
             } catch (e: IllegalArgumentException) {
                 _estado.value = _estado.value.copy(
@@ -120,6 +135,48 @@ class RegistroDiarioViewModel(
                 _estado.value = _estado.value.copy(
                     guardando = false,
                     error = "No se pudo guardar el registro. Intenta nuevamente."
+                )
+            }
+        }
+    }
+
+    fun limpiarError() {
+        _estado.value = _estado.value.copy(error = null)
+    }
+
+    fun eliminarRegistro() {
+        val actual = _estado.value
+        val registro = actual.registro ?: return
+
+        if (
+            actual.cargando ||
+            actual.guardando ||
+            actual.eliminando ||
+            actual.guardado ||
+            actual.eliminado
+        ) return
+
+        _estado.value = actual.copy(
+            eliminando = true,
+            error = null
+        )
+
+        viewModelScope.launch {
+            try {
+                repository.eliminarRegistroDiario(registro)
+
+                _estado.value = _estado.value.copy(
+                    eliminando = false,
+                    registro = null,
+                    eliminado = true
+                )
+            } catch (e: CancellationException) {
+                _estado.value = _estado.value.copy(eliminando = false)
+                throw e
+            } catch (e: Exception) {
+                _estado.value = _estado.value.copy(
+                    eliminando = false,
+                    error = "No se pudo eliminar el registro. Intenta nuevamente."
                 )
             }
         }

@@ -3,6 +3,7 @@ package cl.myciclo.eva.ui.screens.bitacora
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -46,6 +47,7 @@ fun RegistroDiarioScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val volverActual by rememberUpdatedState(onVolver)
 
     val morado = Color(0xFF56328B)
     val fondoRosa = Color(0xFFFFF0F5)
@@ -73,6 +75,9 @@ fun RegistroDiarioScreen(
         mutableStateOf<String?>(null)
     }
     var formularioInicializado by rememberSaveable(fechaIso) {
+        mutableStateOf(false)
+    }
+    var mostrarEliminar by rememberSaveable(fechaIso) {
         mutableStateOf(false)
     }
 
@@ -171,6 +176,7 @@ fun RegistroDiarioScreen(
     LaunchedEffect(estado.cargando, estado.registro) {
         if (
             !estado.cargando &&
+            !estado.eliminado &&
             estado.error == null &&
             !formularioInicializado
         ) {
@@ -188,6 +194,21 @@ fun RegistroDiarioScreen(
         }
     }
 
+    // Confirma la eliminación y regresa a la pantalla anterior.
+    LaunchedEffect(estado.eliminado) {
+        if (estado.eliminado) {
+            mostrarEliminar = false
+
+            Toast.makeText(
+                context,
+                "Registro diario eliminado",
+                Toast.LENGTH_LONG
+            ).show()
+
+            volverActual()
+        }
+    }
+
     val fechaSeleccionada = remember(fechaIso) {
         runCatching {
             LocalDate.parse(fechaIso)
@@ -197,9 +218,13 @@ fun RegistroDiarioScreen(
     val fechaValida = fechaSeleccionada != null &&
             !fechaSeleccionada.isAfter(LocalDate.now())
 
-    val puedeEditar = !estado.guardando &&
+    val puedeEditar = !estado.cargando &&
+            !estado.guardando &&
+            !estado.eliminando &&
             !estado.guardado &&
+            !estado.eliminado &&
             !procesandoFoto &&
+            !mostrarEliminar &&
             formularioInicializado
 
     Column(
@@ -427,11 +452,13 @@ fun RegistroDiarioScreen(
                 }
             }
 
-            estado.error?.let { mensaje ->
-                Text(
-                    text = mensaje,
-                    color = MaterialTheme.colorScheme.error
-                )
+            if (!mostrarEliminar) {
+                estado.error?.let { mensaje ->
+                    Text(
+                        text = mensaje,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
 
             Button(
@@ -456,6 +483,7 @@ fun RegistroDiarioScreen(
             ) {
                 Text(
                     text = when {
+                        estado.eliminando -> "Eliminando…"
                         estado.guardando -> "Guardando…"
                         procesandoFoto -> "Preparando fotografía…"
                         estado.registro != null ->
@@ -465,9 +493,31 @@ fun RegistroDiarioScreen(
                 )
             }
 
+            // Solo aparece cuando existe un registro guardado.
+            if (estado.registro != null) {
+                OutlinedButton(
+                    onClick = {
+                        viewModel.limpiarError()
+                        mostrarEliminar = true
+                    },
+                    enabled = puedeEditar,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 52.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Eliminar registro")
+                }
+            }
+
             TextButton(
                 onClick = onVolver,
-                enabled = !estado.guardando && !procesandoFoto,
+                enabled = !estado.guardando &&
+                        !estado.eliminando &&
+                        !estado.eliminado &&
+                        !procesandoFoto,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Volver", color = morado)
@@ -535,6 +585,77 @@ fun RegistroDiarioScreen(
             },
             onCerrar = {
                 mostrarCamara = false
+            }
+        )
+    }
+
+    // Confirmación antes de eliminar el registro guardado.
+    if (mostrarEliminar && !estado.eliminado) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!estado.eliminando) {
+                    mostrarEliminar = false
+                    viewModel.limpiarError()
+                }
+            },
+            title = {
+                Text("¿Eliminar registro diario?")
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Se eliminarán las observaciones y la referencia " +
+                                "a la fotografía de esta fecha. " +
+                                "El inicio menstrual se conservará."
+                    )
+
+                    Text("Esta acción no se puede deshacer.")
+
+                    if (estado.eliminando) {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    estado.error?.let { mensaje ->
+                        Text(
+                            text = mensaje,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.eliminarRegistro()
+                    },
+                    enabled = !estado.eliminando,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text(
+                        if (estado.eliminando) {
+                            "Eliminando…"
+                        } else {
+                            "Eliminar"
+                        }
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        mostrarEliminar = false
+                        viewModel.limpiarError()
+                    },
+                    enabled = !estado.eliminando
+                ) {
+                    Text("Cancelar")
+                }
             }
         )
     }
