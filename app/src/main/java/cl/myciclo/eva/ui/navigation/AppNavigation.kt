@@ -23,6 +23,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import cl.myciclo.eva.ui.screens.auth.LoginScreen
 import cl.myciclo.eva.ui.screens.auth.RegistroScreen
 import cl.myciclo.eva.ui.screens.auth.BienvenidaScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import cl.myciclo.eva.ui.screens.bitacora.RegistroDiarioScreen
 
 @Composable
 fun AppNavigation(repository: CicloRepository) {
@@ -104,8 +107,31 @@ fun AppNavigation(repository: CicloRepository) {
                 CalendarioScreen(
                     repository = repository,
                     onRegistroClick = { fechaIso ->
-                        // Aquí puedes manejar la navegación al hacer clic en un día,
-                        // por ejemplo: navController.navigate("detalle_registro/$fechaIso")
+                        navController.navigate(
+                            Screen.Bitacora.crearRuta(fechaIso)
+                        ) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(
+                route = Screen.Bitacora.route,
+                arguments = listOf(
+                    navArgument("fecha") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { entrada ->
+                val fechaIso = requireNotNull(
+                    entrada.arguments?.getString("fecha")
+                )
+
+                RegistroDiarioScreen(
+                    repository = repository,
+                    fechaIso = fechaIso,
+                    onVolver = {
+                        navController.popBackStack()
                     }
                 )
             }

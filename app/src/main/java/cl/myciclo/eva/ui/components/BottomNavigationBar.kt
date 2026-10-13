@@ -12,6 +12,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import cl.myciclo.eva.ui.navigation.Screen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
@@ -30,7 +31,14 @@ fun BottomNavigationBar(navController: NavController) {
         items.forEach { (screen, icon) ->
             NavigationBarItem(
                 icon = { Icon(imageVector = icon, contentDescription = screen.title) },
-                label = { Text(screen.title) },
+                label = {
+                    Text(
+                        text = screen.title,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                },
                 selected = currentRoute == screen.route,
                 onClick = {
                     if (currentRoute != screen.route) {
