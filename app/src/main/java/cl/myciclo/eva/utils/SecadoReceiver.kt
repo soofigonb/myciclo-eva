@@ -5,8 +5,13 @@ import android.content.Context
 import android.content.Intent
 
 class SecadoReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context?, intent: Intent?) {
-        // Código de la notificación cuando pase 1 hora
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACCION_SECADO) {
+            NotificacionHelper.mostrar(context)
+        }
+    }
+
+    companion object {
+        const val ACCION_SECADO = "cl.myciclo.eva.AVISO_SECADO"
     }
 }
-
