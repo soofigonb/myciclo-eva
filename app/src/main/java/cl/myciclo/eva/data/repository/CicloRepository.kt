@@ -13,7 +13,13 @@ class CicloRepository(
     val todosLosInicios: Flow<List<InicioMenstrualEntity>> = inicioDao.obtenerTodosInicios()
 
     suspend fun registrarInicioMenstrual(fechaIso: String) {
-        inicioDao.insertarInicio(InicioMenstrualEntity(fechaIso = fechaIso))
+        val insertado = inicioDao.insertarSiNoExiste(
+            InicioMenstrualEntity(fechaIso = fechaIso)
+        )
+
+        require(insertado) {
+            "Ya registraste un inicio menstrual para esta fecha."
+        }
     }
 
     suspend fun obtenerUltimoInicio(): InicioMenstrualEntity? {

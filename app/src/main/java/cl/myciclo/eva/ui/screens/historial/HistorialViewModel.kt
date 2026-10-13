@@ -21,7 +21,10 @@ class HistorialViewModel(repository: CicloRepository) : ViewModel() {
 
     fun calcularDuraciones(lista: List<InicioMenstrualEntity>): List<DuracionCiclo> {
         val resultado = mutableListOf<DuracionCiclo>()
-        val ordenados = lista.map { LocalDate.parse(it.fechaIso) }.sorted()
+        val ordenados = lista
+            .map { LocalDate.parse(it.fechaIso) }
+            .distinct()
+            .sorted()
 
         for (i in 0 until ordenados.size - 1) {
             val inicio = ordenados[i]

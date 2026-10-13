@@ -2,4 +2,9 @@
 <resources>
 
     <style name="Theme.MyCicloEVA" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="ThemeOverlay.MyCicloEVA.DatePicker"
+        parent="android:style/Theme.Material.Light.Dialog.Alert">
+
+        <item name="android:colorAccent">#56328B</item>
+    </style>
 </resources>
