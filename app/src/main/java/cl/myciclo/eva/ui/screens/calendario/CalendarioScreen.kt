@@ -4,189 +4,370 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.myciclo.eva.data.local.entities.RegistroDiarioEntity
 import cl.myciclo.eva.data.repository.CicloRepository
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun CalendarioScreen(
     repository: CicloRepository,
     onRegistroClick: (String) -> Unit = {}
 ) {
-    val viewModel = androidx.lifecycle.viewmodel.compose.viewModel { CalendarioViewModel(repository) }
+    val viewModel: CalendarioViewModel = viewModel {
+        CalendarioViewModel(repository)
+    }
 
     val inicios by viewModel.inicios.collectAsStateWithLifecycle()
     val registros by viewModel.registrosDiarios.collectAsStateWithLifecycle()
 
-    val currentMonth = remember { YearMonth.now() }
-    val daysInMonth = remember { currentMonth.lengthOfMonth() }
-    val firstDayOfWeek = remember { currentMonth.atDay(1).dayOfWeek.value }
-    val today = remember { LocalDate.now() }
+    val fechasInicio = remember(inicios) {
+        inicios.map { it.fechaIso }.toSet()
+    }
 
-    val iniciosSet = remember(inicios) { inicios.map { it.fechaIso }.toSet() }
-    val registrosMap = remember(registros) { registros.associateBy { it.fechaIso } }
+    ContenidoCalendario(
+        fechasInicio = fechasInicio,
+        registros = registros,
+        onRegistroClick = onRegistroClick
+    )
+}
 
-    val lilaSuaveContainer = Color(0xFFEADDFF) // Lila para el día actual
-    val rosaRegistroContainer = Color(0xFFFFD8E4) // Rosa para días con registros
-    val fondoTarjetaLila = Color(0xFFF7F2FA)
+@Composable
+private fun ContenidoCalendario(
+    fechasInicio: Set<String>,
+    registros: List<RegistroDiarioEntity>,
+    onRegistroClick: (String) -> Unit
+) {
+    val morado = Color(0xFF56328B)
+    val textoSuave = Color(0xFF665773)
+    val lilaHoy = Color(0xFFEADDFF)
+    val rosaRegistro = Color(0xFFFFD8E4)
 
-    Column(
+    var mesIso by rememberSaveable {
+        mutableStateOf(YearMonth.now().toString())
+    }
+
+    val mes = remember(mesIso) {
+        YearMonth.parse(mesIso)
+    }
+
+    val hoy = LocalDate.now()
+
+    val formatoMes = remember {
+        DateTimeFormatter.ofPattern(
+            "MMMM 'de' yyyy",
+            Locale.forLanguageTag("es-CL")
+        )
+    }
+
+    val tituloMes = mes.format(formatoMes).replaceFirstChar {
+        it.titlecase(Locale.forLanguageTag("es-CL"))
+    }
+
+    val fechasRegistro = remember(registros) {
+        registros.map { it.fechaIso }.toSet()
+    }
+
+    val registrosDelMes = remember(registros, mes) {
+        registros.filter { registro ->
+            runCatching {
+                YearMonth.from(LocalDate.parse(registro.fechaIso)) == mes
+            }.getOrDefault(false)
+        }.sortedByDescending { it.fechaIso }
+    }
+
+    val espaciosIniciales = mes.atDay(1).dayOfWeek.value - 1
+    val cantidadFilas = (espaciosIniciales + mes.lengthOfMonth() + 6) / 7
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(Color(0xFFFFF0F5)),
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Calendario del Ciclo",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        item {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "Tu calendario 🗓️",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = morado
+                )
 
-        Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Selecciona un día para registrar o revisar tus observaciones.",
+                    color = textoSuave
+                )
+            }
+        }
 
-        Text(
-            text = "${currentMonth.month.name} ${currentMonth.year}",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.secondary
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // PARTE SUPERIOR: Cuadrícula del Calendario
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(310.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = fondoTarjetaLila)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFF7F2FA)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom").forEach { day ->
-                        Text(
-                            text = day,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.width(38.dp),
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(7),
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(firstDayOfWeek - 1) {
-                        Box(modifier = Modifier.size(38.dp))
-                    }
-
-                    items(daysInMonth) { dayIndex ->
-                        val dayNumber = dayIndex + 1
-                        val cellDate = currentMonth.atDay(dayNumber)
-                        val dateIso = cellDate.toString()
-
-                        val esHoy = (cellDate == today)
-                        val tieneRegistro = registrosMap.containsKey(dateIso) || iniciosSet.contains(dateIso)
-
-                        // Lógica exacta: Hoy es lila, días anteriores con registro son rosa, resto blanco
-                        val backgroundColor = when {
-                            esHoy -> lilaSuaveContainer
-                            tieneRegistro -> rosaRegistroContainer
-                            else -> Color.White
-                        }
-
-                        val textColor = when {
-                            esHoy || tieneRegistro -> MaterialTheme.colorScheme.onPrimaryContainer
-                            else -> MaterialTheme.colorScheme.onSurface
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(backgroundColor)
-                                .clickable {
-                                    onRegistroClick(dateIso)
-                                },
-                            contentAlignment = Alignment.Center
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = {
+                                mesIso = mes.minusMonths(1).toString()
+                            }
                         ) {
+                            Text("‹", color = morado)
+                        }
+
+                        Text(
+                            text = tituloMes,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = morado
+                        )
+
+                        TextButton(
+                            onClick = {
+                                mesIso = mes.plusMonths(1).toString()
+                            }
+                        ) {
+                            Text("›", color = morado)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        listOf(
+                            "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"
+                        ).forEach { dia ->
                             Text(
-                                text = dayNumber.toString(),
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = dia,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = textColor
+                                color = textoSuave
                             )
                         }
+                    }
+
+                    repeat(cantidadFilas) { fila ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            repeat(7) { columna ->
+                                val numeroDia =
+                                    fila * 7 + columna - espaciosIniciales + 1
+
+                                if (numeroDia !in 1..mes.lengthOfMonth()) {
+                                    Spacer(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp)
+                                    )
+                                } else {
+                                    val fecha = mes.atDay(numeroDia)
+                                    val fechaIso = fecha.toString()
+                                    val esHoy = fecha == hoy
+                                    val futura = fecha.isAfter(hoy)
+
+                                    val tieneRegistro =
+                                        fechaIso in fechasRegistro ||
+                                                fechaIso in fechasInicio
+
+                                    val fondo = when {
+                                        esHoy -> lilaHoy
+                                        tieneRegistro -> rosaRegistro
+                                        else -> Color.White
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(2.dp)
+                                            .height(48.dp)
+                                            .clip(CircleShape)
+                                            .background(fondo)
+                                            .clickable(enabled = !futura) {
+                                                onRegistroClick(fechaIso)
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = numeroDia.toString(),
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (futura) {
+                                                Color(0xFFAAA1B1)
+                                            } else {
+                                                morado
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    TextButton(
+                        onClick = {
+                            mesIso = YearMonth.now().toString()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Volver al mes actual", color = morado)
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // PARTE INFERIOR: Últimos registros de bitácora (dos tarjetas)
-        Text(
-            text = "Últimos Registros de Bitácora",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        if (inicios.isEmpty() && registros.isEmpty()) {
-            Text("No se han registrado datos todavía.", style = MaterialTheme.typography.bodySmall)
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+        item {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (registros.isNotEmpty()) {
-                    items(registros) { registro ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = fondoTarjetaLila)
-                        ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Text(text = "📅 Fecha: ${registro.fechaIso}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(text = "Ánimo: ${registro.estadoAnimo} | Flujo: ${registro.flujoMenstrual}", style = MaterialTheme.typography.bodySmall)
-                                if (registro.notas.isNotBlank()) {
-                                    Text(text = "Notas: ${registro.notas}", style = MaterialTheme.typography.bodySmall)
-                                }
-                                if (!registro.fotoPath.isNullOrBlank()) {
-                                    Text(text = "📸 [Fotografía adjunta registrada]", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                                }
-                            }
+                LeyendaCalendario(
+                    color = lilaHoy,
+                    texto = "Hoy"
+                )
+
+                LeyendaCalendario(
+                    color = rosaRegistro,
+                    texto = "Con registros"
+                )
+            }
+        }
+
+        item {
+            Text(
+                text = "Los días futuros están deshabilitados.",
+                style = MaterialTheme.typography.bodySmall,
+                color = textoSuave
+            )
+        }
+
+        item {
+            Text(
+                text = "📖 Bitácoras de este mes",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = morado
+            )
+        }
+
+        if (registrosDelMes.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFFCFE)
+                    )
+                ) {
+                    Text(
+                        text = "No hay bitácoras guardadas en este mes. " +
+                                "Selecciona una fecha hasta hoy para agregar una.",
+                        modifier = Modifier.padding(18.dp),
+                        color = textoSuave
+                    )
+                }
+            }
+        } else {
+            items(
+                items = registrosDelMes,
+                key = { it.fechaIso }
+            ) { registro ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onRegistroClick(registro.fechaIso)
+                        },
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFFCFE)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "📅 ${fechaCalendario(registro.fechaIso)}",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = morado
+                        )
+
+                        Text(
+                            text = "🔬 Patrón: ${registro.patron}",
+                            color = textoSuave
+                        )
+
+                        if (registro.estadoAnimo.isNotBlank()) {
+                            Text(
+                                text = "😊 Ánimo: ${registro.estadoAnimo}",
+                                color = textoSuave
+                            )
                         }
+
+                        if (registro.flujoMenstrual.isNotBlank()) {
+                            Text(
+                                text = "🩸 Flujo menstrual: ${registro.flujoMenstrual}",
+                                color = textoSuave
+                            )
+                        }
+
+                        if (registro.notas.isNotBlank()) {
+                            Text(
+                                text = "📝 ${registro.notas}",
+                                color = textoSuave
+                            )
+                        }
+
+                        if (!registro.fotoPath.isNullOrBlank()) {
+                            Text(
+                                text = "📸 Fotografía adjunta",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = morado
+                            )
+                        }
+
+                        Text(
+                            text = "Toca para abrir y editar",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = morado
+                        )
                     }
                 }
             }
@@ -194,125 +375,57 @@ fun CalendarioScreen(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun LeyendaCalendario(
+    color: Color,
+    texto: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+
+        Text(
+            text = texto,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF665773)
+        )
+    }
+}
+
+private fun fechaCalendario(fechaIso: String): String {
+    return runCatching {
+        LocalDate.parse(fechaIso).format(
+            DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        )
+    }.getOrDefault(fechaIso)
+}
+
+@Preview(showBackground = true)
 @Composable
 fun CalendarioScreenPreview() {
     MaterialTheme {
-        val fondoTarjetaLila = Color(0xFFF7F2FA)
-        val lilaSuaveContainer = Color(0xFFEADDFF)
-        val rosaRegistroContainer = Color(0xFFFFD8E4)
+        val hoy = LocalDate.now()
+        val fechaMuestra = hoy.minusDays(2).toString()
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Calendario del Ciclo",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "OCTOBER 2026",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Tarjeta superior simulando que hoy es 12, con registros en días pasados (ej: 5 y 10) y blanco del 13 en adelante
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(310.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = fondoTarjetaLila)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround
-                    ) {
-                        listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom").forEach { day ->
-                            Text(
-                                text = day,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.width(38.dp),
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(7),
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        items(31) { index ->
-                            val dayNum = index + 1
-                            val bg = when {
-                                dayNum == 12 -> lilaSuaveContainer // Hoy (12 de octubre) en lila
-                                dayNum == 5 || dayNum == 10 -> rosaRegistroContainer // Días pasados con registro en rosa
-                                else -> Color.White // Del 13 en adelante y días sin registro en blanco
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(bg),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = dayNum.toString(),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "Últimos Registros de Bitácora",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Dos tarjetas de registro abajo
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = fondoTarjetaLila)
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Text(text = "📅 Fecha: 2026-10-10", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Text(text = "Ánimo: Feliz | Flujo: Moderado", style = MaterialTheme.typography.bodySmall)
-                        Text(text = "Notas: Observación con helechos clara.", style = MaterialTheme.typography.bodySmall)
-                        Text(text = "📸 [Fotografía adjunta registrada]", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = fondoTarjetaLila)
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Text(text = "📅 Fecha: 2026-10-05", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Text(text = "Ánimo: Tranquila | Flujo: Ligero", style = MaterialTheme.typography.bodySmall)
-                        Text(text = "Notas: Excelente día de práctica con Compose.", style = MaterialTheme.typography.bodySmall)
-                        Text(text = "📸 [Fotografía adjunta registrada]", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                    }
-                }
-            }
-        }
+        ContenidoCalendario(
+            fechasInicio = setOf(fechaMuestra),
+            registros = listOf(
+                RegistroDiarioEntity(
+                    fechaIso = fechaMuestra,
+                    patron = "Gotas",
+                    estadoAnimo = "Tranquila",
+                    flujoMenstrual = "Ligero",
+                    notas = "Registro de ejemplo."
+                )
+            ),
+            onRegistroClick = {}
+        )
     }
 }
