@@ -30,4 +30,7 @@ abstract class InicioMenstrualDao {
 
     @Delete
     abstract suspend fun eliminarInicio(inicio: InicioMenstrualEntity)
+
+    @Query("DELETE FROM inicios_menstruales WHERE fechaIso = :fechaIso")
+    abstract suspend fun eliminarPorFecha(fechaIso: String)
 }

@@ -10,7 +10,11 @@ class CicloRepository(
     private val inicioDao: InicioMenstrualDao,
     private val registroDiarioDao: RegistroDiarioDao
 ) {
-    val todosLosInicios: Flow<List<InicioMenstrualEntity>> = inicioDao.obtenerTodosInicios()
+    val todosLosInicios: Flow<List<InicioMenstrualEntity>> =
+        inicioDao.obtenerTodosInicios()
+
+    val todosLosRegistrosDiarios: Flow<List<RegistroDiarioEntity>> =
+        registroDiarioDao.obtenerTodosLosRegistros()
 
     suspend fun registrarInicioMenstrual(fechaIso: String) {
         val insertado = inicioDao.insertarSiNoExiste(
@@ -26,13 +30,13 @@ class CicloRepository(
         return inicioDao.obtenerUltimoInicio()
     }
 
-    // Función para guardar el registro diario en la base de datos
+    suspend fun eliminarInicioMenstrual(fechaIso: String) {
+        inicioDao.eliminarPorFecha(fechaIso)
+    }
+
     suspend fun registrarDiario(registro: RegistroDiarioEntity) {
         registroDiarioDao.insertarRegistro(registro)
     }
-
-    // Flujo para obtener todos los registros diarios en el historial
-    val todosLosRegistrosDiarios: Flow<List<RegistroDiarioEntity>> = registroDiarioDao.obtenerTodosLosRegistros()
 
     suspend fun obtenerRegistroPorFecha(
         fechaIso: String

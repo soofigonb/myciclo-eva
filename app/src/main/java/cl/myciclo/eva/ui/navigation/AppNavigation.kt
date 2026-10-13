@@ -136,7 +136,16 @@ fun AppNavigation(repository: CicloRepository) {
                 )
             }
             composable(Screen.Historial.route) {
-                HistorialScreen(repository = repository)
+                HistorialScreen(
+                    repository = repository,
+                    onEditarRegistro = { fechaIso ->
+                        navController.navigate(
+                            Screen.Bitacora.crearRuta(fechaIso)
+                        ) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
             }
             composable(Screen.Aprender.route) {
                 AprenderScreen(
