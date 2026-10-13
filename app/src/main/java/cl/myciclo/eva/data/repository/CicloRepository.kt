@@ -27,4 +27,16 @@ class CicloRepository(
 
     // Flujo para obtener todos los registros diarios en el historial
     val todosLosRegistrosDiarios: Flow<List<RegistroDiarioEntity>> = registroDiarioDao.obtenerTodosLosRegistros()
+
+    suspend fun obtenerRegistroPorFecha(
+        fechaIso: String
+    ): RegistroDiarioEntity? {
+        return registroDiarioDao.obtenerRegistroPorFecha(fechaIso)
+    }
+
+    suspend fun eliminarRegistroDiario(
+        registro: RegistroDiarioEntity
+    ) {
+        registroDiarioDao.eliminarRegistro(registro)
+    }
 }

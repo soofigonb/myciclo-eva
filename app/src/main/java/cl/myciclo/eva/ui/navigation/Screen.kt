@@ -13,4 +13,7 @@ sealed class Screen(val route: String, val title: String) {
     object FasesCiclo : Screen("fases_ciclo", "Fases del ciclo")
     object PreguntasFrecuentes : Screen("preguntas_frecuentes", "Preguntas frecuentes")
     object Ajustes : Screen("ajustes", "Ajustes")
+    object Bitacora : Screen("bitacora/{fecha}", "Registro diario") {
+        fun crearRuta(fechaIso: String): String = "bitacora/$fechaIso"
+    }
 }
