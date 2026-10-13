@@ -1,9 +1,10 @@
 package cl.myciclo.eva.ui.screens.bitacora
 
-import android.graphics.Bitmap
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,12 +12,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.myciclo.eva.data.repository.CicloRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -35,61 +44,163 @@ fun RegistroDiarioScreen(
 
     val estado by viewModel.estado.collectAsState()
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val morado = Color(0xFF56328B)
     val fondoRosa = Color(0xFFFFF0F5)
 
-    var patron by remember(fechaIso) { mutableStateOf("Gotas") }
-    var sintomas by remember(fechaIso) { mutableStateOf("") }
-    var estadoAnimo by remember(fechaIso) {
+    // Conserva el formulario ante cambios de configuración.
+    var patron by rememberSaveable(fechaIso) {
+        mutableStateOf("Gotas")
+    }
+    var sintomas by rememberSaveable(fechaIso) {
+        mutableStateOf("")
+    }
+    var estadoAnimo by rememberSaveable(fechaIso) {
         mutableStateOf("Tranquila")
     }
-    var flujoMenstrual by remember(fechaIso) {
+    var flujoMenstrual by rememberSaveable(fechaIso) {
         mutableStateOf("Ninguno")
     }
-    var flujoVaginal by remember(fechaIso) {
+    var flujoVaginal by rememberSaveable(fechaIso) {
         mutableStateOf("Normal")
     }
-    var notas by remember(fechaIso) { mutableStateOf("") }
-    var imagen by remember(fechaIso) {
+    var notas by rememberSaveable(fechaIso) {
+        mutableStateOf("")
+    }
+    var imagen by rememberSaveable(fechaIso) {
+        mutableStateOf<String?>(null)
+    }
+    var formularioInicializado by rememberSaveable(fechaIso) {
+        mutableStateOf(false)
+    }
+
+    var mostrarIndicaciones by remember {
+        mutableStateOf(false)
+    }
+    var mostrarCamara by remember {
+        mutableStateOf(false)
+    }
+    var procesandoFoto by remember {
+        mutableStateOf(false)
+    }
+    var errorFoto by remember {
         mutableStateOf<String?>(null)
     }
 
-    // Ambos lanzadores se registran antes de mostrar estados de carga.
+    val permisoCamara = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { concedido ->
+        if (concedido) {
+            mostrarCamara = true
+        } else {
+            errorFoto =
+                "Permite el acceso a la cámara para tomar una fotografía. " +
+                        "También puedes seleccionar una imagen de Galería."
+        }
+    }
+
+    // Copia la imagen a la carpeta privada de la aplicación.
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
-            imagen = uri.toString()
+            scope.launch {
+                procesandoFoto = true
+                errorFoto = null
+
+                try {
+                    val ruta = withContext(Dispatchers.IO) {
+                        val archivo = File.createTempFile(
+                            "galeria_",
+                            ".img",
+                            carpetaFotos(context)
+                        )
+
+                        try {
+                            val entrada = requireNotNull(
+                                context.contentResolver.openInputStream(uri)
+                            )
+
+                            entrada.use { input ->
+                                archivo.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+
+                            // Comprueba que el archivo sea una imagen legible.
+                            val dimensiones = BitmapFactory.Options().apply {
+                                inJustDecodeBounds = true
+                            }
+
+                            BitmapFactory.decodeFile(
+                                archivo.absolutePath,
+                                dimensiones
+                            )
+
+                            require(
+                                dimensiones.outWidth > 0 &&
+                                        dimensiones.outHeight > 0
+                            ) {
+                                "La imagen no es válida."
+                            }
+
+                            archivo.absolutePath
+                        } catch (e: Exception) {
+                            archivo.delete()
+                            throw e
+                        }
+                    }
+
+                    imagen = ruta
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    errorFoto =
+                        "No se pudo cargar la fotografía. " +
+                                "Intenta seleccionar otra imagen."
+                } finally {
+                    procesandoFoto = false
+                }
+            }
         }
     }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        if (bitmap != null) {
-            // Pendiente: guardar el archivo de la fotografía.
-            imagen = "Cámara EVA (Captura exitosa)"
-        }
-    }
+    // Carga los datos una sola vez para no sobrescribir una edición.
+    LaunchedEffect(estado.cargando, estado.registro) {
+        if (
+            !estado.cargando &&
+            estado.error == null &&
+            !formularioInicializado
+        ) {
+            estado.registro?.let { registro ->
+                patron = registro.patron
+                sintomas = registro.sintomas
+                estadoAnimo = registro.estadoAnimo
+                flujoMenstrual = registro.flujoMenstrual
+                flujoVaginal = registro.flujoVaginal
+                notas = registro.notas
+                imagen = registro.fotoPath
+            }
 
-    LaunchedEffect(estado.registro) {
-        estado.registro?.let { registro ->
-            patron = registro.patron
-            sintomas = registro.sintomas
-            estadoAnimo = registro.estadoAnimo
-            flujoMenstrual = registro.flujoMenstrual
-            flujoVaginal = registro.flujoVaginal
-            notas = registro.notas
-            imagen = registro.fotoPath
+            formularioInicializado = true
         }
     }
 
     val fechaSeleccionada = remember(fechaIso) {
-        runCatching { LocalDate.parse(fechaIso) }.getOrNull()
+        runCatching {
+            LocalDate.parse(fechaIso)
+        }.getOrNull()
     }
 
     val fechaValida = fechaSeleccionada != null &&
             !fechaSeleccionada.isAfter(LocalDate.now())
+
+    val puedeEditar = !estado.guardando &&
+            !estado.guardado &&
+            !procesandoFoto &&
+            formularioInicializado
 
     Column(
         modifier = modifier
@@ -125,6 +236,24 @@ fun RegistroDiarioScreen(
             Button(onClick = onVolver) {
                 Text("Volver")
             }
+        } else if (
+            !formularioInicializado &&
+            estado.error != null
+        ) {
+            Text(
+                text = estado.error.orEmpty(),
+                color = MaterialTheme.colorScheme.error
+            )
+
+            Button(
+                onClick = { viewModel.cargarRegistro() }
+            ) {
+                Text("Reintentar")
+            }
+
+            TextButton(onClick = onVolver) {
+                Text("Volver")
+            }
         } else {
             TarjetaBitacora(titulo = "📅 Fecha de registro") {
                 Text(
@@ -150,7 +279,7 @@ fun RegistroDiarioScreen(
                     listOf("Gotas", "Helechos").forEach { opcion ->
                         Button(
                             onClick = { patron = opcion },
-                            enabled = !estado.guardando,
+                            enabled = puedeEditar,
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -179,7 +308,7 @@ fun RegistroDiarioScreen(
                     value = estadoAnimo,
                     onValueChange = { estadoAnimo = it },
                     label = { Text("Estado de ánimo") },
-                    enabled = !estado.guardando,
+                    enabled = puedeEditar,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -188,7 +317,7 @@ fun RegistroDiarioScreen(
                     value = sintomas,
                     onValueChange = { sintomas = it },
                     label = { Text("Síntomas físicos") },
-                    enabled = !estado.guardando,
+                    enabled = puedeEditar,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -199,7 +328,7 @@ fun RegistroDiarioScreen(
                     value = flujoMenstrual,
                     onValueChange = { flujoMenstrual = it },
                     label = { Text("Flujo menstrual") },
-                    enabled = !estado.guardando,
+                    enabled = puedeEditar,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -208,7 +337,7 @@ fun RegistroDiarioScreen(
                     value = flujoVaginal,
                     onValueChange = { flujoVaginal = it },
                     label = { Text("Flujo vaginal") },
-                    enabled = !estado.guardando,
+                    enabled = puedeEditar,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -219,7 +348,7 @@ fun RegistroDiarioScreen(
                     value = notas,
                     onValueChange = { notas = it },
                     label = { Text("Observaciones adicionales") },
-                    enabled = !estado.guardando,
+                    enabled = puedeEditar,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     minLines = 3,
@@ -232,8 +361,11 @@ fun RegistroDiarioScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
-                    onClick = { cameraLauncher.launch() },
-                    enabled = !estado.guardando,
+                    onClick = {
+                        errorFoto = null
+                        mostrarIndicaciones = true
+                    },
+                    enabled = puedeEditar,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("📸 Cámara", color = morado)
@@ -241,20 +373,55 @@ fun RegistroDiarioScreen(
 
                 OutlinedButton(
                     onClick = {
+                        errorFoto = null
                         galleryLauncher.launch("image/*")
                     },
-                    enabled = !estado.guardando,
+                    enabled = puedeEditar,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("🖼️ Galería", color = morado)
                 }
             }
 
-            imagen?.let { referencia ->
-                TarjetaBitacora(titulo = "Fotografía seleccionada") {
-                    Text(referencia)
+            if (procesandoFoto) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Text("Preparando fotografía…")
+            }
+
+            errorFoto?.let { mensaje ->
+                Text(
+                    text = mensaje,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            imagen?.let { ruta ->
+                TarjetaBitacora(
+                    titulo = "Fotografía seleccionada"
+                ) {
+                    FotoRegistro(ruta = ruta)
+
                     Text(
-                        text = "La visualización y el guardado permanente de fotografías se completarán en el siguiente paso.",
+                        text = "Revisa que la muestra se vea con claridad antes de guardar.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    OutlinedButton(
+                        onClick = {
+                            imagen = null
+                            errorFoto = null
+                        },
+                        enabled = puedeEditar,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Quitar fotografía")
+                    }
+
+                    Text(
+                        text = "Puedes usar Cámara o Galería para reemplazarla. Guarda el registro para confirmar el cambio.",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -279,7 +446,7 @@ fun RegistroDiarioScreen(
                         fotoPath = imagen
                     )
                 },
-                enabled = !estado.guardando && !estado.guardado,
+                enabled = puedeEditar,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 52.dp),
@@ -290,6 +457,7 @@ fun RegistroDiarioScreen(
                 Text(
                     text = when {
                         estado.guardando -> "Guardando…"
+                        procesandoFoto -> "Preparando fotografía…"
                         estado.registro != null ->
                             "Actualizar registro diario"
                         else -> "Guardar registro diario"
@@ -299,7 +467,7 @@ fun RegistroDiarioScreen(
 
             TextButton(
                 onClick = onVolver,
-                enabled = !estado.guardando,
+                enabled = !estado.guardando && !procesandoFoto,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Volver", color = morado)
@@ -307,10 +475,76 @@ fun RegistroDiarioScreen(
         }
     }
 
+    if (mostrarIndicaciones) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarIndicaciones = false
+            },
+            title = {
+                Text("Antes de fotografiar 🔬")
+            },
+            text = {
+                Text(
+                    "1. Comprueba que la muestra esté completamente seca.\n\n" +
+                            "2. Enciende EVA para observarla.\n\n" +
+                            "3. Alinea la cámara delantera con el visor.\n\n" +
+                            "4. Mantén el teléfono estable y revisa que el patrón sea visible."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarIndicaciones = false
+
+                        val permitido =
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.CAMERA
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                        if (permitido) {
+                            mostrarCamara = true
+                        } else {
+                            permisoCamara.launch(
+                                Manifest.permission.CAMERA
+                            )
+                        }
+                    }
+                ) {
+                    Text("Abrir cámara delantera")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        mostrarIndicaciones = false
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (mostrarCamara) {
+        CamaraFrontalEVA(
+            onFoto = { ruta ->
+                imagen = ruta
+                errorFoto = null
+                mostrarCamara = false
+            },
+            onCerrar = {
+                mostrarCamara = false
+            }
+        )
+    }
+
     if (estado.guardado) {
         AlertDialog(
             onDismissRequest = onVolver,
-            title = { Text("Registro guardado 💜") },
+            title = {
+                Text("Registro guardado 💜")
+            },
             text = {
                 Text("Tus observaciones quedaron guardadas para esta fecha.")
             },
