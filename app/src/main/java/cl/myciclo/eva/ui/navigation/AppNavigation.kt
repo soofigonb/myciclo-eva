@@ -1,52 +1,111 @@
 package cl.myciclo.eva.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import cl.myciclo.eva.data.local.MyCicloDatabase
+import cl.myciclo.eva.data.local.SesionManager
+import cl.myciclo.eva.data.repository.AuthRepository
 import cl.myciclo.eva.data.repository.CicloRepository
 import cl.myciclo.eva.ui.components.BottomNavigationBar
 import cl.myciclo.eva.ui.screens.ajustes.AjustesScreen
+import cl.myciclo.eva.ui.screens.aprender.AprenderScreen
+import cl.myciclo.eva.ui.screens.aprender.ComoUtilizarScreen
+import cl.myciclo.eva.ui.screens.aprender.FasesCicloScreen
+import cl.myciclo.eva.ui.screens.aprender.GuiaPatronesScreen
+import cl.myciclo.eva.ui.screens.aprender.PreguntasFrecuentesScreen
+import cl.myciclo.eva.ui.screens.auth.BienvenidaScreen
+import cl.myciclo.eva.ui.screens.auth.CuentaEstado
+import cl.myciclo.eva.ui.screens.auth.CuentaViewModel
+import cl.myciclo.eva.ui.screens.auth.FormularioCuentaScreen
+import cl.myciclo.eva.ui.screens.perfil.PerfilScreen
+import cl.myciclo.eva.ui.screens.bitacora.RegistroDiarioScreen
 import cl.myciclo.eva.ui.screens.calendario.CalendarioScreen
 import cl.myciclo.eva.ui.screens.historial.HistorialScreen
 import cl.myciclo.eva.ui.screens.inicio.InicioScreen
-import cl.myciclo.eva.ui.screens.aprender.AprenderScreen
-import cl.myciclo.eva.ui.screens.aprender.ComoUtilizarScreen
-import cl.myciclo.eva.ui.screens.aprender.GuiaPatronesScreen
-import cl.myciclo.eva.ui.screens.aprender.FasesCicloScreen
-import cl.myciclo.eva.ui.screens.aprender.PreguntasFrecuentesScreen
-import androidx.compose.runtime.getValue
-import androidx.navigation.compose.currentBackStackEntryAsState
-import cl.myciclo.eva.ui.screens.auth.LoginScreen
-import cl.myciclo.eva.ui.screens.auth.RegistroScreen
-import cl.myciclo.eva.ui.screens.auth.BienvenidaScreen
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-import cl.myciclo.eva.ui.screens.bitacora.RegistroDiarioScreen
 
 @Composable
-fun AppNavigation(repository: CicloRepository) {
-    val navController = rememberNavController()
+fun AppNavigation(
+    authRepository: AuthRepository,
+    sesionManager: SesionManager
+) {
+    val cuentaViewModel: CuentaViewModel = viewModel {
+        CuentaViewModel(
+            repository = authRepository,
+            sesion = sesionManager
+        )
+    }
 
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val rutaActual = backStackEntry?.destination?.route
+    val estado by cuentaViewModel.estado.collectAsStateWithLifecycle()
 
-    val mostrarBarraInferior =
-        rutaActual != null &&
-                rutaActual != Screen.Bienvenida.route &&
-                rutaActual != Screen.Login.route &&
-                rutaActual != Screen.Registro.route
+    if (estado.iniciando) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else {
+        // Recrea la navegación al cambiar de cuenta.
+        key(estado.usuarioId) {
+            val usuarioId = estado.usuarioId
 
-    Scaffold(
-        bottomBar = {
-            if (mostrarBarraInferior) {
-                BottomNavigationBar(navController = navController)
+            if (usuarioId == null) {
+                NavegacionAcceso(
+                    estado = estado,
+                    viewModel = cuentaViewModel
+                )
+            } else {
+                val context = LocalContext.current.applicationContext
+
+                val repository = remember(usuarioId, context) {
+                    val database =
+                        MyCicloDatabase.getDatabasePorUsuario(
+                            context = context,
+                            usuarioId = usuarioId
+                        )
+
+                    CicloRepository(
+                        inicioDao = database.inicioMenstrualDao(),
+                        registroDiarioDao = database.registroDiarioDao(),
+                        context = context
+                    )
+                }
+
+                NavegacionInterior(
+                    repository = repository,
+                    estado = estado,
+                    cuentaViewModel = cuentaViewModel
+                )
             }
         }
-    ) { innerPadding ->
+    }
+}
+
+@Composable
+private fun NavegacionAcceso(
+    estado: CuentaEstado,
+    viewModel: CuentaViewModel
+) {
+    val navController = rememberNavController()
+
+    Scaffold { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.Bienvenida.route,
@@ -66,43 +125,77 @@ fun AppNavigation(repository: CicloRepository) {
                     }
                 )
             }
+
             composable(Screen.Login.route) {
-                LoginScreen(
-                    onRegistro = {
+                FormularioCuentaScreen(
+                    registro = false,
+                    estado = estado,
+                    viewModel = viewModel,
+                    onCambiarFormulario = {
                         navController.navigate(Screen.Registro.route) {
                             launchSingleTop = true
                         }
                     },
-                    onExplorar = {
-                        navController.navigate(Screen.Inicio.route) {
+                    onVolver = {
+                        navController.popBackStack(
+                            route = Screen.Bienvenida.route,
+                            inclusive = false
+                        )
+                    }
+                )
+            }
+
+            composable(Screen.Registro.route) {
+                FormularioCuentaScreen(
+                    registro = true,
+                    estado = estado,
+                    viewModel = viewModel,
+                    onCambiarFormulario = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Bienvenida.route) {
+                                inclusive = false
+                            }
                             launchSingleTop = true
                         }
-                    }
-                )
-            }
-            composable(Screen.Registro.route) {
-                RegistroScreen(
+                    },
                     onVolver = {
-                        val regresoAlLogin =
-                            navController.popBackStack(
-                                Screen.Login.route,
-                                false
-                            )
-
-                        if (!regresoAlLogin) {
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.Bienvenida.route) {
-                                    inclusive = false
-                                }
-                                launchSingleTop = true
-                            }
-                        }
+                        navController.popBackStack(
+                            route = Screen.Bienvenida.route,
+                            inclusive = false
+                        )
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun NavegacionInterior(
+    repository: CicloRepository,
+    estado: CuentaEstado,
+    cuentaViewModel: CuentaViewModel
+) {
+    val navController = rememberNavController()
+
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(
+                navController = navController
+            )
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Inicio.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
             composable(Screen.Inicio.route) {
-                InicioScreen(repository = repository)
+                InicioScreen(
+                    repository = repository
+                )
             }
+
             composable(Screen.Calendario.route) {
                 CalendarioScreen(
                     repository = repository,
@@ -115,6 +208,7 @@ fun AppNavigation(repository: CicloRepository) {
                     }
                 )
             }
+
             composable(
                 route = Screen.Bitacora.route,
                 arguments = listOf(
@@ -135,6 +229,7 @@ fun AppNavigation(repository: CicloRepository) {
                     }
                 )
             }
+
             composable(Screen.Historial.route) {
                 HistorialScreen(
                     repository = repository,
@@ -147,22 +242,44 @@ fun AppNavigation(repository: CicloRepository) {
                     }
                 )
             }
-            composable(Screen.Aprender.route) {
-                AprenderScreen(
-                    onComoUtilizarClick = {
-                        navController.navigate(Screen.ComoUtilizar.route)
-                    },
-                    onGuiaPatronesClick = {
-                        navController.navigate(Screen.GuiaPatrones.route)
-                    },
-                    onFasesCicloClick = {
-                        navController.navigate(Screen.FasesCiclo.route)
-                    },
-                    onPreguntasFrecuentesClick = {
-                        navController.navigate(Screen.PreguntasFrecuentes.route)
+
+            composable(Screen.Perfil.route) {
+                PerfilScreen(
+                    estado = estado,
+                    viewModel = cuentaViewModel,
+                    onHistorial = {
+                        navController.navigate(Screen.Historial.route) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
+
+            composable(Screen.Aprender.route) {
+                AprenderScreen(
+                    onComoUtilizarClick = {
+                        navController.navigate(
+                            Screen.ComoUtilizar.route
+                        )
+                    },
+                    onGuiaPatronesClick = {
+                        navController.navigate(
+                            Screen.GuiaPatrones.route
+                        )
+                    },
+                    onFasesCicloClick = {
+                        navController.navigate(
+                            Screen.FasesCiclo.route
+                        )
+                    },
+                    onPreguntasFrecuentesClick = {
+                        navController.navigate(
+                            Screen.PreguntasFrecuentes.route
+                        )
+                    }
+                )
+            }
+
             composable(Screen.ComoUtilizar.route) {
                 ComoUtilizarScreen(
                     onVolver = {
@@ -170,6 +287,7 @@ fun AppNavigation(repository: CicloRepository) {
                     }
                 )
             }
+
             composable(Screen.GuiaPatrones.route) {
                 GuiaPatronesScreen(
                     onVolver = {
@@ -177,6 +295,7 @@ fun AppNavigation(repository: CicloRepository) {
                     }
                 )
             }
+
             composable(Screen.FasesCiclo.route) {
                 FasesCicloScreen(
                     onVolver = {
@@ -184,6 +303,7 @@ fun AppNavigation(repository: CicloRepository) {
                     }
                 )
             }
+
             composable(Screen.PreguntasFrecuentes.route) {
                 PreguntasFrecuentesScreen(
                     onVolver = {
@@ -191,6 +311,7 @@ fun AppNavigation(repository: CicloRepository) {
                     }
                 )
             }
+
             composable(Screen.Ajustes.route) {
                 AjustesScreen()
             }

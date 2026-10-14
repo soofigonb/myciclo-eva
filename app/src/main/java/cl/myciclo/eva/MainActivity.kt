@@ -4,7 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import cl.myciclo.eva.data.local.MyCicloDatabase
-import cl.myciclo.eva.data.repository.CicloRepository
+import cl.myciclo.eva.data.local.SesionManager
+import cl.myciclo.eva.data.repository.AuthRepository
 import cl.myciclo.eva.ui.navigation.AppNavigation
 import cl.myciclo.eva.ui.theme.MyCicloEVATheme
 
@@ -17,15 +18,20 @@ class MainActivity : ComponentActivity() {
             applicationContext
         )
 
-        val repository = CicloRepository(
-            inicioDao = database.inicioMenstrualDao(),
-            registroDiarioDao = database.registroDiarioDao(),
-            context = applicationContext
+        val authRepository = AuthRepository(
+            usuarioDao = database.usuarioDao()
+        )
+
+        val sesionManager = SesionManager(
+            applicationContext
         )
 
         setContent {
             MyCicloEVATheme {
-                AppNavigation(repository = repository)
+                AppNavigation(
+                    authRepository = authRepository,
+                    sesionManager = sesionManager
+                )
             }
         }
     }
