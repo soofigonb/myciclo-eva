@@ -1,84 +1,69 @@
 package cl.myciclo.eva.ui.screens.auth
 
-import android.util.Patterns
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 private val Morado = Color(0xFF56328B)
 private val FondoRosado = Color(0xFFFFF0F5)
+private val TextoSuave = Color(0xFF665773)
 
 @Composable
 fun LoginScreen(
     onRegistro: () -> Unit,
     onExplorar: () -> Unit
 ) {
-    var correo by rememberSaveable { mutableStateOf("") }
-
-    // La contraseña se mantiene solamente en memoria.
-    var contrasena by remember { mutableStateOf("") }
-    var mostrarErrores by remember { mutableStateOf(false) }
-    var mostrarAviso by remember { mutableStateOf(false) }
-
-    val correoValido =
-        Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches()
-
-    val errorCorreo = mostrarErrores && !correoValido
-    val errorContrasena = mostrarErrores && contrasena.isBlank()
+    val loginViewModel: LoginViewModel = viewModel()
+    val estado by loginViewModel.estado.collectAsStateWithLifecycle()
 
     FormularioAuth(
         titulo = "Bienvenida a EVA 🌷",
         descripcion = "Un espacio para conocer y acompañar tu ciclo."
     ) {
-        OutlinedTextField(
-            value = correo,
-            onValueChange = { correo = it },
-            label = { Text("Correo electrónico") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email
-            ),
-            isError = errorCorreo,
-            supportingText = {
-                if (errorCorreo) {
-                    Text("Ingresa un correo válido.")
-                }
-            }
+        CampoTextoAuth(
+            valor = estado.correo,
+            onCambio = loginViewModel::cambiarCorreo,
+            etiqueta = "Correo electrónico",
+            icono = Icons.Default.Email,
+            error = estado.errorCorreo,
+            tipoTeclado = KeyboardType.Email
         )
 
         CampoContrasena(
-            valor = contrasena,
-            onCambio = { contrasena = it },
+            valor = estado.contrasena,
+            onCambio = loginViewModel::cambiarContrasena,
             etiqueta = "Contraseña",
-            error = if (errorContrasena) {
-                "Ingresa tu contraseña."
-            } else {
-                null
-            }
+            error = estado.errorContrasena
         )
 
         Button(
-            onClick = {
-                mostrarErrores = true
-
-                if (correoValido && contrasena.isNotBlank()) {
-                    mostrarAviso = true
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
+            onClick = loginViewModel::iniciarSesion,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Morado
             )
@@ -90,134 +75,88 @@ fun LoginScreen(
             onClick = onRegistro,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("¿No tienes cuenta? Regístrate", color = Morado)
+            Text(
+                "¿No tienes cuenta? Regístrate",
+                color = Morado
+            )
         }
 
         OutlinedButton(
             onClick = onExplorar,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
             Text("Explorar aplicación", color = Morado)
         }
 
         Text(
-            text = "Las cuentas estarán disponibles cuando se conecte el servicio. Puedes explorar la aplicación sin iniciar sesión.",
-            style = MaterialTheme.typography.bodySmall
+            text = "Las cuentas estarán disponibles cuando se conecte " +
+                    "el servicio. Puedes explorar la aplicación " +
+                    "sin iniciar sesión.",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextoSuave
         )
     }
 
-    if (mostrarAviso) {
+    if (estado.mostrarAviso) {
         AvisoServicioPendiente(
-            texto = "El formulario es válido, pero todavía no podemos verificar tu cuenta. Puedes explorar la aplicación sin iniciar sesión.",
-            onCerrar = { mostrarAviso = false }
+            texto = "El formulario es válido, pero todavía no podemos " +
+                    "verificar tu cuenta. Puedes explorar la aplicación " +
+                    "sin iniciar sesión.",
+            onCerrar = loginViewModel::cerrarAviso
         )
     }
 }
 
 @Composable
 fun RegistroScreen(onVolver: () -> Unit) {
-    var nombre by rememberSaveable { mutableStateOf("") }
-    var correo by rememberSaveable { mutableStateOf("") }
-
-    var contrasena by remember { mutableStateOf("") }
-    var confirmacion by remember { mutableStateOf("") }
-    var mostrarErrores by remember { mutableStateOf(false) }
-    var mostrarAviso by remember { mutableStateOf(false) }
-
-    val correoValido =
-        Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches()
-
-    val errorNombre =
-        if (mostrarErrores && nombre.isBlank()) {
-            "Ingresa tu nombre."
-        } else {
-            null
-        }
-
-    val errorCorreo =
-        if (mostrarErrores && !correoValido) {
-            "Ingresa un correo válido."
-        } else {
-            null
-        }
-
-    val errorContrasena =
-        if (mostrarErrores && contrasena.length < 8) {
-            "Utiliza al menos 8 caracteres."
-        } else {
-            null
-        }
-
-    val errorConfirmacion =
-        if (mostrarErrores && confirmacion.isEmpty()) {
-            "Confirma tu contraseña."
-        } else if (mostrarErrores && confirmacion != contrasena) {
-            "Las contraseñas no coinciden."
-        } else {
-            null
-        }
+    val registroViewModel: RegistroViewModel = viewModel()
+    val estado by registroViewModel.estado.collectAsStateWithLifecycle()
 
     FormularioAuth(
         titulo = "Crea tu cuenta 🌸",
         descripcion = "Completa tus datos para preparar tu perfil."
     ) {
-        OutlinedTextField(
-            value = nombre,
-            onValueChange = { nombre = it },
-            label = { Text("Nombre") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            isError = errorNombre != null,
-            supportingText = {
-                errorNombre?.let { Text(it) }
-            }
+        CampoTextoAuth(
+            valor = estado.nombre,
+            onCambio = registroViewModel::cambiarNombre,
+            etiqueta = "Nombre",
+            icono = Icons.Default.Person,
+            error = estado.errorNombre
         )
 
-        OutlinedTextField(
-            value = correo,
-            onValueChange = { correo = it },
-            label = { Text("Correo electrónico") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email
-            ),
-            isError = errorCorreo != null,
-            supportingText = {
-                errorCorreo?.let { Text(it) }
-            }
+        CampoTextoAuth(
+            valor = estado.correo,
+            onCambio = registroViewModel::cambiarCorreo,
+            etiqueta = "Correo electrónico",
+            icono = Icons.Default.Email,
+            error = estado.errorCorreo,
+            tipoTeclado = KeyboardType.Email
         )
 
         CampoContrasena(
-            valor = contrasena,
-            onCambio = { contrasena = it },
+            valor = estado.contrasena,
+            onCambio = registroViewModel::cambiarContrasena,
             etiqueta = "Contraseña",
-            error = errorContrasena
+            error = estado.errorContrasena,
+            ayuda = "Utiliza al menos 8 caracteres."
         )
 
         CampoContrasena(
-            valor = confirmacion,
-            onCambio = { confirmacion = it },
+            valor = estado.confirmacion,
+            onCambio = registroViewModel::cambiarConfirmacion,
             etiqueta = "Confirmar contraseña",
-            error = errorConfirmacion
+            error = estado.errorConfirmacion
         )
 
         Button(
-            onClick = {
-                mostrarErrores = true
-
-                val formularioValido =
-                    nombre.isNotBlank() &&
-                            correoValido &&
-                            contrasena.length >= 8 &&
-                            contrasena.isNotBlank() &&
-                            confirmacion == contrasena
-
-                if (formularioValido) {
-                    mostrarAviso = true
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
+            onClick = registroViewModel::crearCuenta,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Morado
             )
@@ -229,19 +168,26 @@ fun RegistroScreen(onVolver: () -> Unit) {
             onClick = onVolver,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Volver al inicio de sesión", color = Morado)
+            Text(
+                "Volver al inicio de sesión",
+                color = Morado
+            )
         }
 
         Text(
-            text = "El registro todavía no está conectado al servicio. No se guardarán estos datos ni se creará una cuenta.",
-            style = MaterialTheme.typography.bodySmall
+            text = "El registro todavía no está conectado al servicio. " +
+                    "No se guardarán estos datos ni se creará una cuenta.",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextoSuave
         )
     }
 
-    if (mostrarAviso) {
+    if (estado.mostrarAviso) {
         AvisoServicioPendiente(
-            texto = "Los datos cumplen las validaciones del formulario. La creación de cuentas estará disponible cuando se conecte el servicio.",
-            onCerrar = { mostrarAviso = false }
+            texto = "Los datos cumplen las validaciones del formulario. " +
+                    "La creación de cuentas estará disponible cuando " +
+                    "se conecte el servicio.",
+            onCerrar = registroViewModel::cerrarAviso
         )
     }
 }
@@ -277,7 +223,7 @@ private fun FormularioAuth(
         Text(
             text = descripcion,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color(0xFF665773)
+            color = TextoSuave
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -287,19 +233,65 @@ private fun FormularioAuth(
 }
 
 @Composable
+private fun CampoTextoAuth(
+    valor: String,
+    onCambio: (String) -> Unit,
+    etiqueta: String,
+    icono: ImageVector,
+    error: String?,
+    tipoTeclado: KeyboardType = KeyboardType.Text
+) {
+    OutlinedTextField(
+        value = valor,
+        onValueChange = onCambio,
+        label = { Text(etiqueta) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = tipoTeclado
+        ),
+        leadingIcon = {
+            Icon(
+                imageVector = icono,
+                contentDescription = null
+            )
+        },
+        trailingIcon = {
+            if (error != null) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Campo con error",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        isError = error != null,
+        supportingText = {
+            MensajeError(error)
+        }
+    )
+}
+
+@Composable
 private fun CampoContrasena(
     valor: String,
     onCambio: (String) -> Unit,
     etiqueta: String,
-    error: String?
+    error: String?,
+    ayuda: String? = null
 ) {
-    var visible by remember { mutableStateOf(false) }
+    // Solo la visibilidad se guarda en el estado de la pantalla.
+    var visible by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     OutlinedTextField(
         value = valor,
         onValueChange = onCambio,
         label = { Text(etiqueta) },
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         singleLine = true,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password
@@ -309,8 +301,16 @@ private fun CampoContrasena(
         } else {
             PasswordVisualTransformation()
         },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null
+            )
+        },
         trailingIcon = {
-            TextButton(onClick = { visible = !visible }) {
+            TextButton(
+                onClick = { visible = !visible }
+            ) {
                 Text(
                     text = if (visible) "Ocultar" else "Mostrar",
                     color = Morado
@@ -319,9 +319,35 @@ private fun CampoContrasena(
         },
         isError = error != null,
         supportingText = {
-            error?.let { Text(it) }
+            if (error != null) {
+                MensajeError(error)
+            } else if (ayuda != null) {
+                Text(ayuda)
+            }
         }
     )
+}
+
+@Composable
+private fun MensajeError(error: String?) {
+    AnimatedVisibility(visible = error != null) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(16.dp)
+            )
+
+            Text(
+                text = error.orEmpty(),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
 }
 
 @Composable
@@ -331,8 +357,12 @@ private fun AvisoServicioPendiente(
 ) {
     AlertDialog(
         onDismissRequest = onCerrar,
-        title = { Text("Conexión pendiente") },
-        text = { Text(texto) },
+        title = {
+            Text("Conexión pendiente")
+        },
+        text = {
+            Text(texto)
+        },
         confirmButton = {
             TextButton(onClick = onCerrar) {
                 Text("Entendido")

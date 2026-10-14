@@ -6,6 +6,8 @@ sealed class Screen(val route: String, val title: String) {
     object Registro : Screen("registro", "Crear cuenta")
     object Inicio : Screen("inicio", "Inicio")
     object Calendario : Screen("calendario", "Calendario")
+
+    object Perfil : Screen("mi_perfil", "Perfil")
     object Historial : Screen("historial", "Historial")
     object Aprender : Screen("aprender", "Aprender")
     object ComoUtilizar : Screen("como_utilizar", "Cómo utilizar EVA")
