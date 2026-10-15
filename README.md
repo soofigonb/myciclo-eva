@@ -5,13 +5,13 @@
 ### Conocimiento es bienestar 💜
 
 Aplicación Android para acompañar el seguimiento del ciclo menstrual,  
-registrar observaciones y acceder a contenido educativo sobre EVA.
+registrar observaciones y aprender sobre el uso de EVA.
 
-**Kotlin · Jetpack Compose · Material 3 · Room**
+**Kotlin · Jetpack Compose · Material 3 · Room · DataStore**
 
 🌿 Conocer · Registrar · Aprender 🌿
 
-**Grupo 5 · Duoc UC**
+**Grupo 5 · DSY1105 · Duoc UC**
 
 </div>
 
@@ -19,101 +19,148 @@ registrar observaciones y acceder a contenido educativo sobre EVA.
 
 ## 🌸 Sobre el proyecto
 
-
 **MyCiclo · EVA** es una aplicación Android desarrollada como proyecto académico para el caso **Calendario Ciclo Ovulatorio**, de la asignatura **DSY1105 — Desarrollo de Aplicaciones Móviles**, en Duoc UC.
 
-El proyecto busca reunir el seguimiento del ciclo menstrual, los registros diarios y la información educativa sobre el dispositivo EVA en una experiencia clara y cercana.
+Reúne el seguimiento del ciclo menstrual, una bitácora de observaciones, fotografías y contenido educativo sobre el dispositivo EVA.
 
-Su desarrollo considera los requisitos del caso y los acuerdos de la reunión con el cliente **MyCiclo SpA**.
-
-> 🚧 **Proyecto en desarrollo:** los módulos se implementan y validan por etapas. Las funciones descritas representan el alcance del proyecto y no implican que todas estén terminadas.
+El proyecto integra los aportes del equipo y considera el material proporcionado por **MyCiclo SpA**.
 
 ---
 
-## 🎯 Objetivo
+## 🤝 Equipo de desarrollo
 
-Desarrollar una aplicación que permita organizar los registros del ciclo menstrual, consultar observaciones anteriores y aprender sobre el uso de EVA.
+| Integrante |
+| :--- |
+| 🌷 Sofía González |
+| 🌿 Jonathan Rivera |
+| 🌸 Nitsi Sepúlveda |
 
-La aplicación busca apoyar el conocimiento del ciclo mediante información educativa y registros personales, respetando los límites de interpretación del dispositivo.
-
----
-
-## 📱 Módulos de la aplicación
-
-| Módulo | Propósito |
-| :--- | :--- |
-| 🏠 **Inicio** | Presentar el acceso a las funciones principales y la información inicial del seguimiento. |
-| 🗓️ **Calendario** | Consultar fechas y registros asociados al ciclo menstrual. |
-| 📝 **Registro diario** | Registrar observaciones, síntomas, estado de ánimo, flujos y notas. |
-| 📂 **Historial** | Consultar los registros guardados y revisar observaciones anteriores. |
-| 📖 **Aprender** | Acceder a guías sobre EVA, patrones, fases del ciclo y preguntas frecuentes. |
-| ⚙️ **Ajustes** | Reunir las opciones de configuración de la aplicación. |
-
-El registro diario puede integrarse dentro del flujo de otras pantallas; no necesariamente corresponde a una pestaña independiente.
+El trabajo se desarrolla mediante ramas y Pull Requests hacia `main`, con revisión e integración de los módulos.
 
 ---
 
-## 🌿 Funcionalidades contempladas
+## 📱 Funcionalidades implementadas
 
-### 🗓️ Seguimiento del ciclo
+### 🌷 Bienvenida y cuentas locales
 
+- Pantalla de bienvenida con acceso a Login y Registro.
+- Creación de cuentas locales con nombre, correo y contraseña.
+- Validación de campos obligatorios, formato de correo y confirmación de contraseña.
+- Detección de correos ya registrados en el dispositivo.
+- Opciones para mostrar y ocultar la contraseña.
+- Contraseñas almacenadas como un hash PBKDF2 con sal aleatoria.
+- Sesión persistente mediante DataStore.
+- Cierre de sesión y acceso como invitada.
+- Registros del ciclo y bitácoras separados por cuenta local.
+
+> Las cuentas y sus registros se almacenan localmente en el dispositivo donde se crean.
+
+### 🏠 Inicio
+
+- Resumen del seguimiento.
+- Día del ciclo calculado a partir del último inicio menstrual.
 - Registro de fechas de inicio menstrual.
-- Consulta de información mediante el calendario.
-- Revisión de registros anteriores.
+- Selector de fecha con estilo morado.
+- Validaciones para impedir fechas futuras e inicios duplicados.
+- Mensajes de carga, error y confirmación.
 
-### 📝 Observaciones diarias
+### 🗓️ Calendario
 
-- Patrón observado con EVA.
-- Síntomas y estado de ánimo.
-- Flujo menstrual y vaginal.
-- Notas personales.
-- Fotografía asociada al registro, según los requisitos y acuerdos con el cliente.
+- Vista mensual con navegación entre meses.
+- Identificación de fechas con inicios menstruales y registros diarios.
+- Consulta de registros asociados al mes.
+- Acceso a la bitácora de una fecha seleccionada.
+- Restricción del registro de observaciones en fechas futuras.
 
-### 📖 Educación
+### 📖 Bitácora diaria
 
-- Instrucciones para utilizar EVA.
-- Explicación de los patrones observados en la saliva.
-- Información sobre las fases del ciclo menstrual.
-- Preguntas frecuentes sobre el dispositivo y su uso.
+- Creación y actualización de un registro por fecha.
+- Selección explícita del patrón observado: Gotas o Helechos.
+- Campos opcionales de estado de ánimo, síntomas, flujos y notas.
+- Captura de muestras mediante cámara frontal.
+- Indicaciones antes de fotografiar la muestra con EVA.
+- Selección de fotografías desde la galería.
+- Vista previa y opciones para quitar o reemplazar fotografías.
+- Eliminación del registro con confirmación.
+- Almacenamiento local de datos y fotografías.
 
-### 💾 Persistencia
+### 📂 Historial
 
-- Almacenamiento local de registros mediante Room.
-- Consulta de la información guardada en el dispositivo.
+- Consulta de inicios menstruales y bitácoras.
+- Cálculo de días entre fechas consecutivas de inicio menstrual.
+- Visualización de observaciones y fotografías guardadas.
+- Acceso a la edición de bitácoras.
+- Eliminación de bitácoras e inicios menstruales con confirmación.
+- Limpieza de fotografías privadas sin uso al actualizar o eliminar bitácoras.
 
-Estas funcionalidades se completan y prueban progresivamente durante el desarrollo.
+### 👤 Perfil
 
----
+- Consulta de nombre, correo, fecha de nacimiento y fotografía.
+- Edición del nombre y fecha de nacimiento.
+- Validaciones visuales junto a los campos.
+- Fotografía de perfil desde cámara o galería.
+- Opción de quitar o reemplazar la fotografía.
+- Confirmación de actualización y finalización de la edición.
+- Acceso al historial y cierre de sesión.
 
-## 📚 Contenido educativo
+### 📚 Aprender
 
-El módulo **Aprender** reúne cuatro secciones:
+El módulo reúne cuatro secciones educativas:
 
 | Sección | Contenido |
 | :--- | :--- |
-| 📖 **Cómo utilizar EVA** | Preparación, secado, observación y registro de la muestra. |
-| 🔬 **Guía de patrones** | Explicaciones sobre las formas observadas y los límites de su interpretación. |
-| 🌸 **Fases del ciclo** | Menstruación, fase folicular, ovulación y fase lútea. |
-| 💬 **Preguntas frecuentes** | Uso, cuidados y alcance del dispositivo. |
+| 📖 Cómo utilizar EVA | Preparación, secado, observación y registro de la muestra. |
+| 🔬 Guía de patrones | Descripción de formas observadas y límites de interpretación. |
+| 🌸 Fases del ciclo | Información sobre las fases del ciclo menstrual. |
+| 💬 Preguntas frecuentes | Uso, cuidados y alcance del dispositivo. |
 
-Los textos actuales se basan en el material educativo proporcionado por MyCiclo.
+Los textos se basan en el material educativo proporcionado por MyCiclo.
 
-Las fotografías de referencia y sus descripciones se incorporarán con la validación correspondiente del cliente.
+### ⚙️ Ajustes y recordatorios
+
+- Programación de un recordatorio de secado para aproximadamente una hora.
+- Prueba de notificación en diez segundos.
+- Cancelación del recordatorio y de la prueba.
+- Solicitud del permiso de notificaciones cuando corresponde.
+- Acceso a los ajustes de notificaciones del teléfono.
+- Mensajes visuales de confirmación.
+
+> Android puede ajustar el momento del aviso por ahorro de batería. Después de reiniciar el teléfono se debe programar nuevamente. Para la prueba de diez segundos, se mantiene abierta la pantalla de Ajustes.
 
 ---
 
-## 🎨 Identidad visual
+## 🧭 Navegación
 
-La propuesta visual utiliza tonos rosados y morados, tarjetas con bordes redondeados y elementos gráficos que ayudan a identificar los contenidos.
+La barra inferior contiene:
 
-| Color | Código | Uso actual en el módulo educativo |
+**Inicio · Calendario · Perfil · Aprender · Más**
+
+El menú **Más** permite abrir **Ajustes** e **Historial**.
+
+La bienvenida y los formularios de acceso se muestran sin barra inferior. El historial también es accesible desde Perfil.
+
+---
+
+## 🎨 Identidad visual y retroalimentación
+
+La interfaz utiliza tonos rosados y morados, tarjetas redondeadas e íconos para identificar acciones y contenidos.
+
+| Color | Código | Uso |
 | :--- | :--- | :--- |
-| 💜 Morado | `#56328B` | Títulos y elementos destacados. |
-| 🌷 Rosado suave | `#FFF0F5` | Fondo de las pantallas. |
-| 🤍 Blanco rosado | `#FFFCFE` | Tarjetas de contenido. |
-| 🪻 Lavanda | `#F0E1FA` | Fondo de los emojis. |
+| 💜 Morado | `#56328B` | Títulos, botones y elementos destacados. |
+| 🌷 Rosado suave | `#FFF0F5` | Fondo de pantallas. |
+| 🤍 Blanco rosado | `#FFFCFE` | Tarjetas. |
+| 🪻 Lavanda | `#EADDFF` | Avatar e indicadores de selección. |
 
-La uniformidad visual entre los módulos se revisa durante la integración del proyecto.
+La aplicación incorpora:
+
+- Mensajes e íconos de error.
+- Aparición animada de errores y avisos con `AnimatedVisibility`.
+- Ajustes animados de tamaño con `animateContentSize`.
+- Indicadores de carga.
+- Bloqueo de acciones durante operaciones de guardado y eliminación.
+- Diálogos de confirmación para eliminar registros y cerrar sesión.
+- Confirmaciones visuales después de guardar.
 
 ---
 
@@ -121,67 +168,96 @@ La uniformidad visual entre los módulos se revisa durante la integración del p
 
 | Tecnología | Uso |
 | :--- | :--- |
-| **Kotlin** | Lenguaje de programación. |
-| **Jetpack Compose** | Construcción de la interfaz Android. |
-| **Material 3** | Componentes visuales. |
-| **Navigation Compose** | Navegación entre pantallas. |
-| **Room** | Persistencia local. |
-| **ViewModel** | Gestión del estado y la lógica de presentación en los módulos que lo utilizan. |
-| **Coroutines y Flow** | Operaciones asíncronas y observación de datos. |
-| **Gradle** | Configuración y compilación. |
-| **Git y GitHub** | Control de versiones y colaboración. |
+| Kotlin | Lenguaje de programación. |
+| Jetpack Compose y Material 3 | Interfaz y componentes visuales. |
+| Navigation Compose | Navegación entre pantallas. |
+| ViewModel | Estado y lógica de presentación. |
+| Coroutines, Flow y StateFlow | Operaciones asíncronas y observación de datos. |
+| Room | Persistencia local de cuentas y registros. |
+| DataStore Preferences | Identificación de la sesión activa. |
+| CameraX | Cámara frontal para fotografías de muestras. |
+| Activity Result API | Selección de imágenes, cámara de perfil y permisos. |
+| AlarmManager y notificaciones Android | Recordatorio de secado. |
+| Git y GitHub | Control de versiones e integración del equipo. |
 
 ---
 
-## 🧩 Organización del código
+## 🧩 Organización del proyecto
 
-El proyecto organiza sus responsabilidades en áreas:
+El código se organiza con un enfoque **MVVM**, separando interfaz, estado, lógica y acceso a datos.
 
-| Área | Responsabilidad |
+| Ubicación | Responsabilidad |
 | :--- | :--- |
-| **Datos** | Base de datos, entidades, DAO y repositorios. |
-| **Pantallas** | Interfaz de los módulos de la aplicación. |
-| **ViewModels** | Estado y lógica de presentación. |
-| **Navegación** | Rutas y conexión entre pantallas. |
-| **Componentes** | Elementos visuales reutilizables. |
-| **Tema** | Colores, tipografía y configuración visual. |
+| `data/local` | Base de datos y sesión local. |
+| `data/local/entities` | Entidades persistidas en Room. |
+| `data/local/dao` | Consultas y operaciones de datos. |
+| `data/repository` | Acceso a cuentas, ciclos y registros. |
+| `ui/screens` | Pantallas y ViewModels por módulo. |
+| `ui/navigation` | Rutas y navegación. |
+| `ui/components` | Componentes compartidos. |
+| `ui/theme` | Tema, colores y tipografía. |
+| `utils` | Contraseñas y notificaciones. |
 
-La arquitectura se desarrolla hacia el enfoque **MVVM**, conforme a los requisitos de la asignatura.
+---
+
+## 💾 Almacenamiento local
+
+- Las cuentas se guardan en la base principal.
+- Cada cuenta utiliza una base independiente para sus ciclos y bitácoras.
+- El modo invitada conserva sus registros por separado de las cuentas.
+- DataStore conserva el identificador de la sesión activa.
+- Las fotografías seleccionadas o capturadas se guardan en archivos privados de la aplicación.
+- Las migraciones de Room permiten actualizar el esquema sin recurrir al borrado destructivo de datos.
+
+---
+
+## 📷 Recursos nativos y permisos
+
+| Recurso | Uso |
+| :--- | :--- |
+| Cámara | Fotografías de muestras y de perfil. |
+| Selector de imágenes | Fotografías desde la galería. |
+| Notificaciones | Avisos para revisar el secado de la muestra. |
+
+Los permisos se solicitan al utilizar la función correspondiente. Si se rechaza el acceso a la cámara, sigue disponible la selección desde la galería.
 
 ---
 
 ## 🚀 Ejecutar el proyecto
 
-### 1. Clonar el repositorio
+### Requisitos
+
+- Android Studio y los componentes del SDK solicitados por Gradle.
+- SDK de compilación Android 35.
+- JDK 17.
+- Emulador o teléfono con **Android 10 — API 29 o superior**.
+- Cámara disponible para probar capturas.
+- Notificaciones habilitadas para probar los recordatorios.
+
+### 1. Clonar
 
 ```bash
 git clone https://github.com/soofigonb/myciclo-eva.git
+cd myciclo-eva
 ```
 
-### 2. Abrir en Android Studio
+### 2. Abrir y sincronizar
 
-Abre la carpeta `myciclo-eva` y espera a que termine la sincronización de Gradle.
+Abre la carpeta del proyecto en Android Studio y espera a que finalice la sincronización de Gradle.
 
-### 3. Preparar el entorno
+### 3. Ejecutar
 
-- Instala los componentes del SDK solicitados por Android Studio.
-- Utiliza JDK 17 para ejecutar Gradle.
-- Configura un emulador o conecta un teléfono con **Android 10 — API 29 o superior**, según el mínimo actual del proyecto.
-- Si utilizas un teléfono, activa la depuración USB.
+Selecciona un emulador o teléfono y presiona **Run ▶**.
 
-### 4. Ejecutar la aplicación
+Si utilizas un teléfono, habilita la depuración USB.
 
-Selecciona el dispositivo y presiona **Run ▶** en Android Studio.
-
-### Compilar desde la terminal
-
-**Git Bash:**
+### Compilar desde Git Bash
 
 ```bash
 ./gradlew :app:assembleDebug --no-configuration-cache
 ```
 
-**Windows PowerShell:**
+### Compilar desde PowerShell
 
 ```powershell
 .\gradlew.bat :app:assembleDebug --no-configuration-cache
@@ -195,38 +271,47 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## 🤝 Equipo de desarrollo
+## 🧪 Comprobaciones funcionales
 
-### Grupo 5
+Para revisar los principales flujos de la aplicación:
 
-| Integrante |
-| :--- |
-| 🌷 Sofía González |
-| 🌿 Jonathan Cornejo |
-| 🌸 Nitsi Sepúlveda |
-
-El proyecto reúne los aportes de los tres integrantes en los módulos de seguimiento, registros, educación e integración.
-
-Cada integrante trabaja en su rama y propone sus cambios mediante un **Pull Request** hacia `main`.
-
-Antes de integrar, se revisan los cambios, la compilación y el funcionamiento de los módulos involucrados.
+1. Crear una cuenta e iniciar sesión.
+2. Comprobar errores con campos vacíos y contraseñas distintas.
+3. Editar el perfil y guardar una fotografía.
+4. Registrar un inicio menstrual y comprobar la restricción de duplicados.
+5. Crear una bitácora seleccionando un patrón.
+6. Incorporar una fotografía desde cámara o galería.
+7. Consultar, actualizar y eliminar registros desde Historial.
+8. Cerrar y abrir la aplicación para comprobar persistencia.
+9. Acceder con otra cuenta y comprobar la separación de registros.
+10. Probar notificaciones, permisos y cancelación.
+11. Navegar por las cuatro secciones educativas y regresar.
 
 ---
 
-## 🌱 Estado del proyecto
+## 📋 Planificación y colaboración
 
-El equipo continúa trabajando en:
+El equipo organiza sus tareas mediante **Trello** y mantiene el historial de desarrollo en **GitHub**.
 
-- Completar los flujos del calendario, los registros y el historial.
-- Revisar las validaciones y la persistencia de los datos.
-- Incorporar y validar las imágenes educativas.
-- Completar los recursos nativos exigidos por la asignatura.
-- Revisar la arquitectura y la integración entre módulos.
-- Unificar los detalles visuales.
-- Realizar pruebas de navegación y funcionamiento.
-- Actualizar los requisitos según los acuerdos con el cliente.
+- Trabajo mediante ramas.
+- Integración mediante Pull Requests.
+- Commits con descripciones de los cambios.
+- Distribución y seguimiento de tareas en el tablero del equipo.
 
-El seguimiento de tareas se realiza en el tablero del equipo y mediante la actividad del repositorio.
+---
+
+## 🌷 Logros del proyecto
+
+- Interfaz coherente con la identidad visual de MyCiclo · EVA.
+- Navegación entre seguimiento, calendario, perfil, historial y educación.
+- Cuentas locales con sesión persistente y registros separados por usuaria.
+- Formularios con validaciones, mensajes e íconos de error.
+- Creación, consulta, actualización y eliminación de registros.
+- Fotografías desde cámara y galería.
+- Recordatorios con notificaciones y gestión de permisos.
+- Persistencia local mediante Room y DataStore.
+- Organización del código con pantallas, ViewModels, repositorios y DAO.
+- Desarrollo colaborativo mediante ramas, commits y Pull Requests.
 
 ---
 
@@ -234,19 +319,19 @@ El seguimiento de tareas se realiza en el tablero del equipo y mediante la activ
 
 EVA permite observar patrones en muestras de saliva seca. No mide hormonas directamente ni confirma por sí sola que la ovulación haya ocurrido.
 
-El dispositivo y el contenido de la aplicación **no deben utilizarse como método anticonceptivo ni como reemplazo de una evaluación profesional de salud**.
+El contenido y los registros de esta aplicación tienen un propósito educativo y de seguimiento personal.
 
-Este repositorio corresponde a un proyecto académico en desarrollo.
+**No deben utilizarse como método anticonceptivo ni como reemplazo de una evaluación profesional de salud.**
 
 ---
 
 ## 🔗 Referencias
 
+- [Repositorio del proyecto](https://github.com/soofigonb/myciclo-eva)
 - [Sitio oficial de MyCiclo](https://myciclo.cl/)
 - [Instagram de MyCiclo](https://www.instagram.com/myciclo_official/)
 - **EVA y el Ciclo de Fertilidad Femenina — Guía de apoyo para estudiantes**, proporcionada por MyCiclo.
-- **Guía inicial de Jetpack Compose y navegación**, material de la asignatura.
-- Caso, requisitos y pautas de evaluación de **DSY1105**.
+- Caso, guías y pautas de evaluación de **DSY1105**.
 
 ---
 
