@@ -15,6 +15,7 @@ data class RegistroDiarioEstado(
     val guardando: Boolean = false,
     val eliminando: Boolean = false,
     val registro: RegistroDiarioEntity? = null,
+    val errorPatron: String? = null,
     val error: String? = null,
     val guardado: Boolean = false,
     val eliminado: Boolean = false
@@ -67,6 +68,18 @@ class RegistroDiarioViewModel(
         }
     }
 
+    fun limpiarErrorPatron() {
+        _estado.value = _estado.value.copy(
+            errorPatron = null
+        )
+    }
+
+    fun limpiarError() {
+        _estado.value = _estado.value.copy(
+            error = null
+        )
+    }
+
     fun guardarRegistro(
         patron: String,
         estadoAnimo: String,
@@ -86,10 +99,18 @@ class RegistroDiarioViewModel(
             actual.eliminado
         ) return
 
-        // Bloquea otros intentos antes de iniciar la operación.
+        if (patron !in setOf("Gotas", "Helechos")) {
+            _estado.value = actual.copy(
+                errorPatron = "Selecciona el patrón que observaste.",
+                error = null
+            )
+            return
+        }
+
         _estado.value = actual.copy(
             guardando = true,
             error = null,
+            errorPatron = null,
             guardado = false
         )
 
@@ -99,10 +120,6 @@ class RegistroDiarioViewModel(
 
                 require(!fecha.isAfter(LocalDate.now())) {
                     "No puedes registrar una fecha futura."
-                }
-
-                require(patron.isNotBlank()) {
-                    "Selecciona el patrón observado."
                 }
 
                 val registro = RegistroDiarioEntity(
@@ -124,7 +141,9 @@ class RegistroDiarioViewModel(
                     guardado = true
                 )
             } catch (e: CancellationException) {
-                _estado.value = _estado.value.copy(guardando = false)
+                _estado.value = _estado.value.copy(
+                    guardando = false
+                )
                 throw e
             } catch (e: IllegalArgumentException) {
                 _estado.value = _estado.value.copy(
@@ -138,10 +157,6 @@ class RegistroDiarioViewModel(
                 )
             }
         }
-    }
-
-    fun limpiarError() {
-        _estado.value = _estado.value.copy(error = null)
     }
 
     fun eliminarRegistro() {
@@ -158,7 +173,8 @@ class RegistroDiarioViewModel(
 
         _estado.value = actual.copy(
             eliminando = true,
-            error = null
+            error = null,
+            errorPatron = null
         )
 
         viewModelScope.launch {
@@ -171,7 +187,9 @@ class RegistroDiarioViewModel(
                     eliminado = true
                 )
             } catch (e: CancellationException) {
-                _estado.value = _estado.value.copy(eliminando = false)
+                _estado.value = _estado.value.copy(
+                    eliminando = false
+                )
                 throw e
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(

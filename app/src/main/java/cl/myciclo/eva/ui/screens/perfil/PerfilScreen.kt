@@ -3,11 +3,14 @@ package cl.myciclo.eva.ui.screens.perfil
 import android.Manifest
 import android.app.DatePickerDialog
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.view.ContextThemeWrapper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,16 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -47,6 +45,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Locale
 
 @Composable
 fun PerfilScreen(
@@ -55,6 +55,7 @@ fun PerfilScreen(
     onHistorial: () -> Unit
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
     val perfil = estado.perfil
     val morado = Color(0xFF56328B)
@@ -79,6 +80,10 @@ fun PerfilScreen(
         mutableStateOf(false)
     }
 
+    var ultimoGuardadoAtendido by rememberSaveable(perfil?.id) {
+        mutableStateOf(estado.perfilGuardado)
+    }
+
     var procesandoFoto by remember {
         mutableStateOf(false)
     }
@@ -87,7 +92,6 @@ fun PerfilScreen(
         mutableStateOf<String?>(null)
     }
 
-    // Refleja los datos guardados cuando no se está editando.
     LaunchedEffect(perfil, editando) {
         if (!editando) {
             nombre = perfil?.nombre.orEmpty()
@@ -96,7 +100,16 @@ fun PerfilScreen(
         }
     }
 
-    // Copia la fotografía seleccionada al almacenamiento privado.
+    // Finaliza la edición cuando se confirma un nuevo guardado.
+    LaunchedEffect(estado.perfilGuardado) {
+        if (estado.perfilGuardado > ultimoGuardadoAtendido) {
+            ultimoGuardadoAtendido = estado.perfilGuardado
+            editando = false
+            errorFoto = null
+            focusManager.clearFocus()
+        }
+    }
+
     val galeria = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -168,7 +181,6 @@ fun PerfilScreen(
         }
     }
 
-    // La cámara devuelve una imagen pequeña para usar como avatar.
     val camara = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap ->
@@ -227,6 +239,7 @@ fun PerfilScreen(
     }
 
     fun abrirCamara() {
+        focusManager.clearFocus()
         errorFoto = null
 
         try {
@@ -244,7 +257,7 @@ fun PerfilScreen(
             abrirCamara()
         } else {
             errorFoto =
-                "Necesitas permitir el acceso a la cámara para tomar una fotografía."
+                "Permite el acceso a la cámara para tomar una fotografía."
         }
     }
 
@@ -289,13 +302,13 @@ fun PerfilScreen(
                 if (editando) {
                     OutlinedButton(
                         onClick = {
+                            focusManager.clearFocus()
                             errorFoto = null
 
                             try {
                                 galeria.launch("image/*")
                             } catch (e: Exception) {
-                                errorFoto =
-                                    "No se pudo abrir la galería."
+                                errorFoto = "No se pudo abrir la galería."
                             }
                         },
                         enabled = habilitado,
@@ -366,11 +379,35 @@ fun PerfilScreen(
 
                     OutlinedTextField(
                         value = nombre,
-                        onValueChange = { nombre = it },
+                        onValueChange = {
+                            nombre = it
+                            viewModel.limpiarErrorNombrePerfil()
+                        },
                         label = { Text("Nombre") },
                         enabled = editando && habilitado,
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = estado.errorNombrePerfil != null,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null
+                            )
+                        },
+                        trailingIcon = {
+                            if (estado.errorNombrePerfil != null) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = "Nombre con error",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        supportingText = {
+                            ErrorPerfil(
+                                mensaje = estado.errorNombrePerfil
+                            )
+                        }
                     )
 
                     Text(
@@ -390,21 +427,37 @@ fun PerfilScreen(
 
                     OutlinedButton(
                         onClick = {
+                            focusManager.clearFocus()
+
                             val inicial = runCatching {
                                 LocalDate.parse(fechaNacimiento)
                             }.getOrDefault(
                                 LocalDate.now().minusYears(18)
                             )
 
-                            DatePickerDialog(
+                            val contextoCalendario = ContextThemeWrapper(
                                 context,
-                                R.style.CalendarioPerfilEVA,
+                                R.style.CalendarioPerfilEVA
+                            ).apply {
+                                applyOverrideConfiguration(
+                                    Configuration().apply {
+                                        setLocale(
+                                            Locale.forLanguageTag("es-CL")
+                                        )
+                                    }
+                                )
+                            }
+
+                            DatePickerDialog(
+                                contextoCalendario,
                                 { _, anio, mes, dia ->
                                     fechaNacimiento = LocalDate.of(
                                         anio,
                                         mes + 1,
                                         dia
                                     ).toString()
+
+                                    viewModel.limpiarErrorFechaNacimiento()
                                 },
                                 inicial.year,
                                 inicial.monthValue - 1,
@@ -412,13 +465,39 @@ fun PerfilScreen(
                             ).apply {
                                 datePicker.maxDate =
                                     System.currentTimeMillis()
+
+                                datePicker.firstDayOfWeek = Calendar.MONDAY
+
+                                setButton(
+                                    DatePickerDialog.BUTTON_POSITIVE,
+                                    "Seleccionar",
+                                    this
+                                )
+
+                                setButton(
+                                    DatePickerDialog.BUTTON_NEGATIVE,
+                                    "Cancelar",
+                                    this
+                                )
                             }.show()
                         },
                         enabled = editando && habilitado,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor =
+                                if (estado.errorFechaNacimiento != null) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    morado
+                                }
+                        )
                     ) {
                         Text("📅 $fechaLegible")
                     }
+
+                    ErrorPerfil(
+                        mensaje = estado.errorFechaNacimiento
+                    )
 
                     Text(
                         text = "La fecha de nacimiento es obligatoria " +
@@ -431,6 +510,8 @@ fun PerfilScreen(
             if (editando) {
                 Button(
                     onClick = {
+                        focusManager.clearFocus()
+
                         viewModel.guardarPerfil(
                             nombre = nombre,
                             fechaNacimiento = fechaNacimiento,
@@ -459,7 +540,9 @@ fun PerfilScreen(
                             perfil.fechaNacimiento.orEmpty()
                         foto = perfil.fotoPerfilPath
                         errorFoto = null
+                        viewModel.limpiarErroresPerfil()
                         editando = false
+                        focusManager.clearFocus()
                     },
                     enabled = habilitado,
                     modifier = Modifier.fillMaxWidth()
@@ -469,6 +552,7 @@ fun PerfilScreen(
             } else {
                 Button(
                     onClick = {
+                        viewModel.limpiarErroresPerfil()
                         errorFoto = null
                         editando = true
                     },
@@ -489,23 +573,14 @@ fun PerfilScreen(
             )
         }
 
-        errorFoto?.let { mensaje ->
-            Text(
-                text = mensaje,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
+        ErrorPerfil(mensaje = errorFoto)
+        ErrorPerfil(mensaje = estado.error)
 
-        estado.error?.let { mensaje ->
+        AnimatedVisibility(
+            visible = estado.mensaje != null
+        ) {
             Text(
-                text = mensaje,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-
-        estado.mensaje?.let { mensaje ->
-            Text(
-                text = mensaje,
+                text = estado.mensaje.orEmpty(),
                 color = morado
             )
         }
@@ -536,9 +611,7 @@ fun PerfilScreen(
     if (confirmarSalida) {
         AlertDialog(
             onDismissRequest = {
-                if (habilitado) {
-                    confirmarSalida = false
-                }
+                if (habilitado) confirmarSalida = false
             },
             title = {
                 Text("¿Salir de EVA?")
@@ -565,6 +638,29 @@ fun PerfilScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun ErrorPerfil(mensaje: String?) {
+    AnimatedVisibility(visible = mensaje != null) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(18.dp)
+            )
+
+            Text(
+                text = mensaje.orEmpty(),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 
