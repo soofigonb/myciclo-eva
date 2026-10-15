@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 data class CuentaEstado(
     val iniciando: Boolean = true,
@@ -24,6 +25,9 @@ data class CuentaEstado(
     val errorCorreo: String? = null,
     val errorContrasena: String? = null,
     val errorConfirmacion: String? = null,
+    val errorNombrePerfil: String? = null,
+    val errorFechaNacimiento: String? = null,
+    val perfilGuardado: Int = 0,
     val error: String? = null,
     val mensaje: String? = null
 )
@@ -44,7 +48,6 @@ class CuentaViewModel(
         viewModelScope.launch {
             try {
                 sesion.usuarioId.collectLatest { id ->
-                    // Evita mostrar información de la cuenta anterior.
                     _estado.value = _estado.value.copy(
                         iniciando = true,
                         perfil = null
@@ -151,7 +154,6 @@ class CuentaViewModel(
 
     fun enviarFormulario(registro: Boolean) {
         val actual = _estado.value
-
         if (actual.procesando) return
 
         val nombreError = if (registro && actual.nombre.isBlank()) {
@@ -281,7 +283,7 @@ class CuentaViewModel(
         }
     }
 
-    // Se conserva para compatibilidad con MiPerfilScreen anterior.
+    // Compatibilidad con la pantalla anterior.
     fun guardarNombre(nombre: String) {
         val id = _estado.value.usuarioId ?: return
 
@@ -331,33 +333,100 @@ class CuentaViewModel(
         }
     }
 
+    fun limpiarErroresPerfil() {
+        _estado.value = _estado.value.copy(
+            errorNombrePerfil = null,
+            errorFechaNacimiento = null,
+            error = null,
+            mensaje = null
+        )
+    }
+
+    fun limpiarErrorNombrePerfil() {
+        _estado.value = _estado.value.copy(
+            errorNombrePerfil = null,
+            error = null,
+            mensaje = null
+        )
+    }
+
+    fun limpiarErrorFechaNacimiento() {
+        _estado.value = _estado.value.copy(
+            errorFechaNacimiento = null,
+            error = null,
+            mensaje = null
+        )
+    }
+
     fun guardarPerfil(
         nombre: String,
         fechaNacimiento: String,
         fotoPerfilPath: String?
     ) {
-        val id = _estado.value.usuarioId ?: return
+        val actual = _estado.value
+        val id = actual.usuarioId ?: return
 
-        if (id <= 0L || _estado.value.procesando) return
+        if (id <= 0L || actual.procesando) return
 
-        _estado.value = _estado.value.copy(
-            procesando = true,
+        val nombreLimpio = nombre.trim()
+
+        val errorNombre = if (nombreLimpio.isBlank()) {
+            "Ingresa tu nombre."
+        } else {
+            null
+        }
+
+        val fecha = runCatching {
+            LocalDate.parse(fechaNacimiento)
+        }.getOrNull()
+
+        val errorFecha = when {
+            fechaNacimiento.isBlank() ->
+                "Selecciona tu fecha de nacimiento."
+
+            fecha == null ->
+                "Selecciona una fecha válida."
+
+            fecha.isAfter(LocalDate.now()) ->
+                "La fecha de nacimiento no puede ser futura."
+
+            else -> null
+        }
+
+        val valido = errorNombre == null && errorFecha == null
+
+        _estado.value = actual.copy(
+            errorNombrePerfil = errorNombre,
+            errorFechaNacimiento = errorFecha,
             error = null,
-            mensaje = null
+            mensaje = null,
+            procesando = valido
         )
+
+        if (!valido) return
 
         viewModelScope.launch {
             try {
+                val fechaGuardada = requireNotNull(fecha).toString()
+
                 repository.actualizarPerfil(
                     id = id,
-                    nombre = nombre,
-                    fechaNacimiento = fechaNacimiento,
+                    nombre = nombreLimpio,
+                    fechaNacimiento = fechaGuardada,
                     fotoPerfilPath = fotoPerfilPath
                 )
 
                 _estado.value = _estado.value.copy(
                     procesando = false,
-                    mensaje = "Perfil actualizado."
+                    perfil = _estado.value.perfil?.copy(
+                        nombre = nombreLimpio,
+                        fechaNacimiento = fechaGuardada,
+                        fotoPerfilPath = fotoPerfilPath
+                    ),
+                    errorNombrePerfil = null,
+                    errorFechaNacimiento = null,
+                    mensaje = "Perfil actualizado.",
+                    perfilGuardado = _estado.value.perfilGuardado + 1
                 )
             } catch (e: CancellationException) {
                 _estado.value = _estado.value.copy(
