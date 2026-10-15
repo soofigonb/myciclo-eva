@@ -4,8 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.myciclo.eva.data.repository.CicloRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
@@ -25,29 +30,65 @@ data class InicioEstado(
 class InicioViewModel(
     private val repository: CicloRepository
 ) : ViewModel() {
+
     private val _estado = MutableStateFlow(InicioEstado())
     val estado = _estado.asStateFlow()
 
+    /*
+     * Comprueba la fecha del teléfono cada segundo, pero solo emite
+     * cuando cambia el día.
+     *
+     * No consulta Room cada segundo ni modifica la fecha que la
+     * usuaria está seleccionando en el formulario.
+     */
+    private fun observarFechaActual() = flow {
+        var ultimaFecha = LocalDate.now()
+        emit(ultimaFecha)
+
+        while (currentCoroutineContext().isActive) {
+            delay(1_000L)
+
+            val fechaActual = LocalDate.now()
+
+            if (fechaActual != ultimaFecha) {
+                ultimaFecha = fechaActual
+                emit(fechaActual)
+            }
+        }
+    }
+
     init {
+        observarCiclo()
+    }
+
+    private fun observarCiclo() {
         viewModelScope.launch {
             try {
-                repository.todosLosInicios.collect { inicios ->
-                    val hoy = LocalDate.now()
+                combine(
+                    repository.todosLosInicios,
+                    observarFechaActual()
+                ) { inicios, hoy ->
                     val ultimo = inicios
-                        .mapNotNull {
+                        .mapNotNull { inicio ->
                             runCatching {
-                                LocalDate.parse(it.fechaIso)
+                                LocalDate.parse(inicio.fechaIso)
                             }.getOrNull()
                         }
-                        .filter { !it.isAfter(hoy) }
+                        .filter { fecha ->
+                            !fecha.isAfter(hoy)
+                        }
                         .maxOrNull()
 
+                    val diaDelCiclo = ultimo?.let { inicio ->
+                        ChronoUnit.DAYS.between(inicio, hoy).toInt() + 1
+                    }
+
+                    ultimo?.toString() to diaDelCiclo
+                }.collect { (ultimoInicio, diaDelCiclo) ->
                     _estado.value = _estado.value.copy(
                         cargando = false,
-                        ultimoInicio = ultimo?.toString(),
-                        diaDelCiclo = ultimo?.let {
-                            ChronoUnit.DAYS.between(it, hoy).toInt() + 1
-                        },
+                        ultimoInicio = ultimoInicio,
+                        diaDelCiclo = diaDelCiclo,
                         errorCarga = null
                     )
                 }
@@ -63,6 +104,8 @@ class InicioViewModel(
     }
 
     fun prepararFormulario() {
+        if (_estado.value.guardando) return
+
         _estado.value = _estado.value.copy(
             fecha = LocalDate.now().toString(),
             errorFecha = null,
@@ -71,6 +114,8 @@ class InicioViewModel(
     }
 
     fun cambiarFecha(fecha: String) {
+        if (_estado.value.guardando) return
+
         _estado.value = _estado.value.copy(
             fecha = fecha,
             errorFecha = null
@@ -78,54 +123,75 @@ class InicioViewModel(
     }
 
     fun confirmarGuardado() {
-        _estado.value = _estado.value.copy(guardado = false)
+        _estado.value = _estado.value.copy(
+            guardado = false
+        )
     }
 
     fun registrarNuevoInicio() {
-        if (_estado.value.guardando) return
+        val actual = _estado.value
+        if (actual.guardando) return
 
-        val texto = _estado.value.fecha.trim()
+        val texto = actual.fecha.trim()
+
         val fecha = try {
-            require(Regex("\\d{4}-\\d{2}-\\d{2}").matches(texto))
+            require(
+                Regex("\\d{4}-\\d{2}-\\d{2}").matches(texto)
+            )
+
             LocalDate.parse(texto)
         } catch (e: DateTimeParseException) {
-            _estado.value = _estado.value.copy(
-                errorFecha = "Ingresa una fecha existente, por ejemplo 2026-10-12."
+            _estado.value = actual.copy(
+                errorFecha = "Ingresa una fecha existente, " +
+                        "por ejemplo 2026-10-12."
             )
             return
         } catch (e: IllegalArgumentException) {
-            _estado.value = _estado.value.copy(
+            _estado.value = actual.copy(
                 errorFecha = "Usa el formato AAAA-MM-DD."
             )
             return
         }
 
         if (fecha.isAfter(LocalDate.now())) {
-            _estado.value = _estado.value.copy(
+            _estado.value = actual.copy(
                 errorFecha = "No puedes registrar una fecha futura."
             )
             return
         }
 
-        viewModelScope.launch {
-            _estado.value = _estado.value.copy(
-                guardando = true,
-                errorFecha = null
-            )
+        // Bloquea nuevos intentos antes de iniciar el guardado.
+        _estado.value = actual.copy(
+            guardando = true,
+            errorFecha = null,
+            guardado = false
+        )
 
+        viewModelScope.launch {
             try {
-                repository.registrarInicioMenstrual(fecha.toString())
+                // Comprueba nuevamente por si cambió la fecha del teléfono.
+                require(!fecha.isAfter(LocalDate.now())) {
+                    "No puedes registrar una fecha futura."
+                }
+
+                repository.registrarInicioMenstrual(
+                    fecha.toString()
+                )
 
                 _estado.value = _estado.value.copy(
                     guardando = false,
                     guardado = true
                 )
             } catch (e: CancellationException) {
+                _estado.value = _estado.value.copy(
+                    guardando = false
+                )
                 throw e
             } catch (e: IllegalArgumentException) {
                 _estado.value = _estado.value.copy(
                     guardando = false,
                     errorFecha = e.message
+                        ?: "Revisa la fecha seleccionada."
                 )
             } catch (e: Exception) {
                 _estado.value = _estado.value.copy(
