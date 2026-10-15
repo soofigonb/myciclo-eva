@@ -1,10 +1,13 @@
 package cl.myciclo.eva.ui.screens.perfil
 
+import android.Manifest
 import android.app.DatePickerDialog
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,8 +25,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import cl.myciclo.eva.R
 import cl.myciclo.eva.ui.screens.auth.CuentaEstado
 import cl.myciclo.eva.ui.screens.auth.CuentaViewModel
@@ -83,7 +87,7 @@ fun PerfilScreen(
         mutableStateOf<String?>(null)
     }
 
-    // Actualiza el formulario con los datos guardados.
+    // Refleja los datos guardados cuando no se está editando.
     LaunchedEffect(perfil, editando) {
         if (!editando) {
             nombre = perfil?.nombre.orEmpty()
@@ -92,6 +96,7 @@ fun PerfilScreen(
         }
     }
 
+    // Copia la fotografía seleccionada al almacenamiento privado.
     val galeria = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -112,7 +117,7 @@ fun PerfilScreen(
                         }
 
                         val archivo = File.createTempFile(
-                            "perfil_",
+                            "perfil_galeria_",
                             ".img",
                             carpeta
                         )
@@ -141,7 +146,7 @@ fun PerfilScreen(
                                 opciones.outWidth > 0 &&
                                         opciones.outHeight > 0
                             ) {
-                                "El archivo seleccionado no es una imagen válida."
+                                "El archivo no es una imagen válida."
                             }
 
                             archivo.absolutePath
@@ -160,6 +165,86 @@ fun PerfilScreen(
                     procesandoFoto = false
                 }
             }
+        }
+    }
+
+    // La cámara devuelve una imagen pequeña para usar como avatar.
+    val camara = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            scope.launch {
+                procesandoFoto = true
+                errorFoto = null
+
+                try {
+                    val ruta = withContext(Dispatchers.IO) {
+                        val carpeta = File(
+                            context.filesDir,
+                            "perfiles_eva"
+                        )
+
+                        check(carpeta.exists() || carpeta.mkdirs()) {
+                            "No se pudo preparar la carpeta de fotografías."
+                        }
+
+                        val archivo = File.createTempFile(
+                            "perfil_camara_",
+                            ".jpg",
+                            carpeta
+                        )
+
+                        try {
+                            archivo.outputStream().use { salida ->
+                                check(
+                                    bitmap.compress(
+                                        Bitmap.CompressFormat.JPEG,
+                                        90,
+                                        salida
+                                    )
+                                ) {
+                                    "No se pudo guardar la fotografía."
+                                }
+                            }
+
+                            archivo.absolutePath
+                        } catch (e: Exception) {
+                            archivo.delete()
+                            throw e
+                        }
+                    }
+
+                    foto = ruta
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    errorFoto = "No se pudo guardar la fotografía."
+                } finally {
+                    procesandoFoto = false
+                }
+            }
+        }
+    }
+
+    fun abrirCamara() {
+        errorFoto = null
+
+        try {
+            camara.launch()
+        } catch (e: Exception) {
+            errorFoto =
+                "No se pudo abrir la cámara. Comprueba que esté disponible."
+        }
+    }
+
+    val permisoCamara = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { concedido ->
+        if (concedido) {
+            abrirCamara()
+        } else {
+            errorFoto =
+                "Necesitas permitir el acceso a la cámara para tomar una fotografía."
         }
     }
 
@@ -203,10 +288,42 @@ fun PerfilScreen(
 
                 if (editando) {
                     OutlinedButton(
-                        onClick = { galeria.launch("image/*") },
-                        enabled = habilitado
+                        onClick = {
+                            errorFoto = null
+
+                            try {
+                                galeria.launch("image/*")
+                            } catch (e: Exception) {
+                                errorFoto =
+                                    "No se pudo abrir la galería."
+                            }
+                        },
+                        enabled = habilitado,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Seleccionar fotografía")
+                        Text("🖼️ Elegir desde galería")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            val concedido =
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.CAMERA
+                                ) == PackageManager.PERMISSION_GRANTED
+
+                            if (concedido) {
+                                abrirCamara()
+                            } else {
+                                permisoCamara.launch(
+                                    Manifest.permission.CAMERA
+                                )
+                            }
+                        },
+                        enabled = habilitado,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("📸 Tomar fotografía")
                     }
 
                     if (foto != null) {
@@ -220,6 +337,13 @@ fun PerfilScreen(
                             Text("Quitar fotografía")
                         }
                     }
+
+                    Text(
+                        text = "Pulsa Guardar cambios para conservar " +
+                                "tu fotografía de perfil.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF665773)
+                    )
                 }
             }
 
@@ -260,7 +384,9 @@ fun PerfilScreen(
                         LocalDate.parse(fechaNacimiento).format(
                             DateTimeFormatter.ofPattern("dd/MM/yyyy")
                         )
-                    }.getOrDefault("Seleccionar fecha de nacimiento")
+                    }.getOrDefault(
+                        "Seleccionar fecha de nacimiento"
+                    )
 
                     OutlinedButton(
                         onClick = {
