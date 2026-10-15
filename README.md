@@ -43,7 +43,7 @@ El trabajo se desarrolla mediante ramas y Pull Requests hacia `main`, con revisi
 
 ### 🌷 Bienvenida y cuentas locales
 
-- Pantalla de bienvenida con acceso a Login y Registro.
+- Pantalla de bienvenida con acceso a inicio de sesión y registro.
 - Creación de cuentas locales con nombre, correo y contraseña.
 - Validación de campos obligatorios, formato de correo y confirmación de contraseña.
 - Detección de correos ya registrados en el dispositivo.
@@ -78,7 +78,7 @@ El trabajo se desarrolla mediante ramas y Pull Requests hacia `main`, con revisi
 - Selección explícita del patrón observado: Gotas o Helechos.
 - Campos opcionales de estado de ánimo, síntomas, flujos y notas.
 - Captura de muestras mediante cámara frontal.
-- Indicaciones antes de fotografiar la muestra con EVA.
+- Indicaciones para fotografiar la muestra con EVA.
 - Selección de fotografías desde la galería.
 - Vista previa y opciones para quitar o reemplazar fotografías.
 - Eliminación del registro con confirmación.
@@ -101,6 +101,7 @@ El trabajo se desarrolla mediante ramas y Pull Requests hacia `main`, con revisi
 - Fotografía de perfil desde cámara o galería.
 - Opción de quitar o reemplazar la fotografía.
 - Confirmación de actualización y finalización de la edición.
+- Selector de fecha de nacimiento en español y con estilo morado.
 - Acceso al historial y cierre de sesión.
 
 ### 📚 Aprender
@@ -110,11 +111,23 @@ El módulo reúne cuatro secciones educativas:
 | Sección | Contenido |
 | :--- | :--- |
 | 📖 Cómo utilizar EVA | Preparación, secado, observación y registro de la muestra. |
-| 🔬 Guía de patrones | Descripción de formas observadas y límites de interpretación. |
+| 🔬 Guía de patrones | Ejemplos visuales, fotografías de referencia y orientación para observar los patrones. |
 | 🌸 Fases del ciclo | Información sobre las fases del ciclo menstrual. |
 | 💬 Preguntas frecuentes | Uso, cuidados y alcance del dispositivo. |
 
-Los textos se basan en el material educativo proporcionado por MyCiclo.
+La **Guía de patrones** incorpora tres ejemplos con sus títulos y explicaciones:
+
+- Sin helechos visibles.
+- Patrón de helechos.
+- Patrón de helechos marcado.
+
+También incluye **cinco fotografías adicionales de referencia**, que muestran la diversidad visual de las muestras.
+
+Las imágenes se incorporan como recursos locales y pueden consultarse sin conexión. Se conservaron los colores y patrones del material original.
+
+Todas las secciones educativas incluyen navegación de regreso a **Aprender**, con botones al inicio y al final del contenido.
+
+Los textos y las imágenes se basan en el material educativo proporcionado por **MyCiclo**.
 
 ### ⚙️ Ajustes y recordatorios
 
@@ -139,6 +152,8 @@ El menú **Más** permite abrir **Ajustes** e **Historial**.
 
 La bienvenida y los formularios de acceso se muestran sin barra inferior. El historial también es accesible desde Perfil.
 
+Las cuatro secciones educativas permiten regresar a la pantalla principal de Aprender.
+
 ---
 
 ## 🎨 Identidad visual y retroalimentación
@@ -161,6 +176,8 @@ La aplicación incorpora:
 - Bloqueo de acciones durante operaciones de guardado y eliminación.
 - Diálogos de confirmación para eliminar registros y cerrar sesión.
 - Confirmaciones visuales después de guardar.
+- Fotografías de referencia acompañadas de títulos y descripciones.
+- Contenido desplazable para consultar las secciones completas.
 
 ---
 
@@ -197,6 +214,11 @@ El código se organiza con un enfoque **MVVM**, separando interfaz, estado, lóg
 | `ui/components` | Componentes compartidos. |
 | `ui/theme` | Tema, colores y tipografía. |
 | `utils` | Contraseñas y notificaciones. |
+| `res/drawable-nodpi` | Fotografías educativas de referencia EVA. |
+
+Las pantallas educativas de texto comparten el componente `ContenidoEducativo`, que mantiene una presentación y navegación uniformes.
+
+La Guía de patrones utiliza tarjetas con imágenes y una lista desplazable para presentar los ejemplos.
 
 ---
 
@@ -208,6 +230,7 @@ El código se organiza con un enfoque **MVVM**, separando interfaz, estado, lóg
 - DataStore conserva el identificador de la sesión activa.
 - Las fotografías seleccionadas o capturadas se guardan en archivos privados de la aplicación.
 - Las migraciones de Room permiten actualizar el esquema sin recurrir al borrado destructivo de datos.
+- Las imágenes educativas se incluyen dentro de la aplicación como recursos locales.
 
 ---
 
@@ -276,16 +299,22 @@ app/build/outputs/apk/debug/app-debug.apk
 Para revisar los principales flujos de la aplicación:
 
 1. Crear una cuenta e iniciar sesión.
-2. Comprobar errores con campos vacíos y contraseñas distintas.
-3. Editar el perfil y guardar una fotografía.
-4. Registrar un inicio menstrual y comprobar la restricción de duplicados.
-5. Crear una bitácora seleccionando un patrón.
-6. Incorporar una fotografía desde cámara o galería.
-7. Consultar, actualizar y eliminar registros desde Historial.
-8. Cerrar y abrir la aplicación para comprobar persistencia.
-9. Acceder con otra cuenta y comprobar la separación de registros.
-10. Probar notificaciones, permisos y cancelación.
-11. Navegar por las cuatro secciones educativas y regresar.
+2. Comprobar errores con campos vacíos, correos inválidos y contraseñas distintas.
+3. Editar el perfil, seleccionar una fecha de nacimiento y guardar una fotografía.
+4. Probar la fotografía de perfil desde cámara y galería.
+5. Registrar un inicio menstrual y comprobar la restricción de duplicados.
+6. Comprobar que no se acepten fechas futuras para los registros.
+7. Crear una bitácora seleccionando un patrón.
+8. Incorporar una fotografía desde cámara o galería.
+9. Consultar, actualizar y eliminar registros desde Historial.
+10. Cerrar y abrir la aplicación para comprobar persistencia.
+11. Acceder con otra cuenta y comprobar la separación de registros.
+12. Probar notificaciones, permisos y cancelación.
+13. Navegar por las cuatro secciones educativas.
+14. Comprobar que la Guía de patrones muestre los tres ejemplos y las cinco muestras.
+15. Verificar los botones de regreso al inicio y al final de las secciones educativas.
+
+Esta lista sirve como guía de revisión manual de los flujos implementados.
 
 ---
 
@@ -297,6 +326,7 @@ El equipo organiza sus tareas mediante **Trello** y mantiene el historial de des
 - Integración mediante Pull Requests.
 - Commits con descripciones de los cambios.
 - Distribución y seguimiento de tareas en el tablero del equipo.
+- Integración de los aportes de los tres integrantes.
 
 ---
 
@@ -308,6 +338,9 @@ El equipo organiza sus tareas mediante **Trello** y mantiene el historial de des
 - Formularios con validaciones, mensajes e íconos de error.
 - Creación, consulta, actualización y eliminación de registros.
 - Fotografías desde cámara y galería.
+- Perfil editable con fotografía y fecha de nacimiento.
+- Guía educativa con ocho imágenes de referencia EVA.
+- Navegación de regreso uniforme en las secciones educativas.
 - Recordatorios con notificaciones y gestión de permisos.
 - Persistencia local mediante Room y DataStore.
 - Organización del código con pantallas, ViewModels, repositorios y DAO.
@@ -319,7 +352,7 @@ El equipo organiza sus tareas mediante **Trello** y mantiene el historial de des
 
 EVA permite observar patrones en muestras de saliva seca. No mide hormonas directamente ni confirma por sí sola que la ovulación haya ocurrido.
 
-El contenido y los registros de esta aplicación tienen un propósito educativo y de seguimiento personal.
+El contenido, las imágenes de referencia y los registros de esta aplicación tienen un propósito educativo y de seguimiento personal.
 
 **No deben utilizarse como método anticonceptivo ni como reemplazo de una evaluación profesional de salud.**
 
