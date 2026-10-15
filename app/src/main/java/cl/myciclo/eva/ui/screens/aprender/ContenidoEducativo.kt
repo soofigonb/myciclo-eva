@@ -20,26 +20,38 @@ internal fun ContenidoEducativo(
     onVolver: () -> Unit
 ) {
     val morado = Color(0xFF56328B)
+    val fondoRosa = Color(0xFFFFF0F5)
+    val fondoTarjeta = Color(0xFFFFFCFE)
+    val textoSuave = Color(0xFF665773)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF0F5))
+            .background(fondoRosa)
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = titulo,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = morado
-        )
+        Column {
+            TextButton(onClick = onVolver) {
+                Text(
+                    text = "← Volver",
+                    color = morado
+                )
+            }
+
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = morado
+            )
+        }
 
         Text(
             text = introduccion,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color(0xFF665773)
+            color = textoSuave
         )
 
         secciones.forEach { (subtitulo, contenido) ->
@@ -47,7 +59,7 @@ internal fun ContenidoEducativo(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFFFFCFE)
+                    containerColor = fondoTarjeta
                 )
             ) {
                 Column(
@@ -64,7 +76,7 @@ internal fun ContenidoEducativo(
                     Text(
                         text = contenido,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFF665773)
+                        color = textoSuave
                     )
                 }
             }
@@ -73,12 +85,15 @@ internal fun ContenidoEducativo(
         Text(
             text = "Fuente: MyCiclo · Guía de apoyo para estudiantes.",
             style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF665773)
+            color = textoSuave
         )
 
         Button(
             onClick = onVolver,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = morado,
                 contentColor = Color.White
