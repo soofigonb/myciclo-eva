@@ -35,6 +35,9 @@ import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+// VISTA:
+// Aquí preparo lo que la usuaria ve:
+// campos, botones, fotografías y mensajes.
 @Composable
 fun RegistroDiarioScreen(
     repository: CicloRepository,
@@ -42,21 +45,39 @@ fun RegistroDiarioScreen(
     onVolver: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Obtengo el ViewModel que coordina el registro de esta fecha.
+    // La clave incluye la fecha para distinguir cada registro.
     val viewModel: RegistroDiarioViewModel = viewModel(
         key = "registro-$fechaIso"
     ) {
         RegistroDiarioViewModel(repository, fechaIso)
     }
 
+    // Observo lo que informa el ViewModel:
+    // cargando, guardando, errores, guardado o eliminado.
     val estado by viewModel.estado.collectAsStateWithLifecycle()
+
+    // Permite utilizar servicios de Android, como permisos y archivos.
     val context = LocalContext.current
+
+    // Permite quitar el foco de un campo.
     val focusManager = LocalFocusManager.current
+
+    // Lo utilizo para tareas de esta pantalla,
+    // como copiar una imagen seleccionada desde la galería.
     val scope = rememberCoroutineScope()
+
+    // Mantengo disponible la versión más reciente de la acción de volver.
     val volverActual by rememberUpdatedState(onVolver)
 
     val morado = Color(0xFF56328B)
 
-    // Los registros nuevos requieren elegir un patrón.
+    // Estos valores pertenecen al formulario que se está editando.
+    // Todavía no significa que estén guardados en Room.
+    //
+    // rememberSaveable ayuda a conservarlos ante recomposiciones
+    // y determinadas recreaciones de la pantalla.
+
     var patron by rememberSaveable(fechaIso) {
         mutableStateOf("")
     }
@@ -81,18 +102,24 @@ fun RegistroDiarioScreen(
         mutableStateOf("")
     }
 
+    // Aquí conservo la ruta de la fotografía elegida.
+    // null significa que no hay una fotografía seleccionada.
     var imagen by rememberSaveable(fechaIso) {
         mutableStateOf<String?>(null)
     }
 
+    // Recuerdo si ya rellené el formulario con el registro guardado.
+    // Así evito sobrescribir lo que la usuaria está editando.
     var formularioInicializado by rememberSaveable(fechaIso) {
         mutableStateOf(false)
     }
 
+    // Controla si debe aparecer la confirmación para eliminar.
     var mostrarEliminar by rememberSaveable(fechaIso) {
         mutableStateOf(false)
     }
 
+    // Estos valores controlan elementos temporales de la pantalla.
     var mostrarIndicaciones by remember {
         mutableStateOf(false)
     }
@@ -109,27 +136,36 @@ fun RegistroDiarioScreen(
         mutableStateOf<String?>(null)
     }
 
+    // Aquí recibo la respuesta al permiso de cámara.
     val permisoCamara = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { concedido ->
+
         if (concedido) {
+            // Si acepta, puedo mostrar la cámara.
             mostrarCamara = true
         } else {
+            // Si rechaza, explico qué ocurrió y ofrezco la galería.
             errorFoto =
                 "Permite el acceso a la cámara para tomar una fotografía. " +
                         "También puedes seleccionar una imagen de Galería."
         }
     }
 
+    // Aquí recibo la imagen seleccionada desde la galería.
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
+
+        // Si la usuaria cancela la selección, uri puede ser null.
         if (uri != null) {
             scope.launch {
                 procesandoFoto = true
                 errorFoto = null
 
                 try {
+                    // Copio el archivo usando un contexto adecuado
+                    // para lectura y escritura de archivos.
                     val ruta = withContext(Dispatchers.IO) {
                         val archivo = File.createTempFile(
                             "galeria_",
@@ -142,12 +178,16 @@ fun RegistroDiarioScreen(
                                 context.contentResolver.openInputStream(uri)
                             )
 
+                            // Copio la imagen al almacenamiento privado.
+                            // use cierra los archivos al terminar.
                             entrada.use { input ->
                                 archivo.outputStream().use { output ->
                                     input.copyTo(output)
                                 }
                             }
 
+                            // Primero leo sus dimensiones
+                            // para comprobar que sea una imagen reconocible.
                             val dimensiones = BitmapFactory.Options().apply {
                                 inJustDecodeBounds = true
                             }
@@ -166,26 +206,32 @@ fun RegistroDiarioScreen(
 
                             archivo.absolutePath
                         } catch (e: Exception) {
+                            // Si falló la preparación,
+                            // intento retirar el archivo incompleto.
                             archivo.delete()
                             throw e
                         }
                     }
 
+                    // Selecciono la copia privada en el formulario.
                     imagen = ruta
                 } catch (e: CancellationException) {
+                    // Respeto la cancelación de la tarea.
                     throw e
                 } catch (e: Exception) {
                     errorFoto =
                         "No se pudo cargar la fotografía. " +
                                 "Intenta seleccionar otra imagen."
                 } finally {
+                    // Termine bien o mal, dejo de mostrar
+                    // que la fotografía se está preparando.
                     procesandoFoto = false
                 }
             }
         }
     }
 
-    // Carga una sola vez para conservar las ediciones del formulario.
+    // Cuando termina la carga, relleno el formulario una vez.
     LaunchedEffect(estado.cargando, estado.registro) {
         if (
             !estado.cargando &&
@@ -193,6 +239,7 @@ fun RegistroDiarioScreen(
             estado.error == null &&
             !formularioInicializado
         ) {
+            // Si había un registro, copio sus valores a los campos.
             estado.registro?.let { registro ->
                 patron = registro.patron
                 sintomas = registro.sintomas
@@ -203,10 +250,13 @@ fun RegistroDiarioScreen(
                 imagen = registro.fotoPath
             }
 
+            // Si no había registro, los campos permanecen vacíos.
             formularioInicializado = true
         }
     }
 
+    // Cuando el ViewModel informa que se eliminó,
+    // aviso a la usuaria y vuelvo.
     LaunchedEffect(estado.eliminado) {
         if (estado.eliminado) {
             mostrarEliminar = false
@@ -221,6 +271,8 @@ fun RegistroDiarioScreen(
         }
     }
 
+    // Intento interpretar la fecha para decidir qué mostrar.
+    // Si el texto no representa una fecha válida, obtengo null.
     val fechaSeleccionada = remember(fechaIso) {
         runCatching {
             LocalDate.parse(fechaIso)
@@ -230,6 +282,8 @@ fun RegistroDiarioScreen(
     val fechaValida = fechaSeleccionada != null &&
             !fechaSeleccionada.isAfter(LocalDate.now())
 
+    // Solo habilito la edición cuando la pantalla está preparada
+    // y no hay otra operación incompatible en curso.
     val puedeEditar = !estado.cargando &&
             !estado.guardando &&
             !estado.eliminando &&
@@ -239,6 +293,7 @@ fun RegistroDiarioScreen(
             !mostrarEliminar &&
             formularioInicializado
 
+    // Organizo el contenido de la pantalla verticalmente.
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -262,8 +317,10 @@ fun RegistroDiarioScreen(
         )
 
         if (estado.cargando) {
+            // Mientras se consulta el registro, muestro carga.
             CircularProgressIndicator()
         } else if (!fechaValida) {
+            // Si la fecha no sirve, explico el problema.
             ErrorBitacora(
                 mensaje = estado.error
                     ?: "Selecciona una fecha válida que no sea futura."
@@ -276,6 +333,7 @@ fun RegistroDiarioScreen(
             !formularioInicializado &&
             estado.error != null
         ) {
+            // Si falló la consulta, permito reintentar.
             ErrorBitacora(mensaje = estado.error)
 
             Button(
@@ -318,7 +376,10 @@ fun RegistroDiarioScreen(
                     listOf("Gotas", "Helechos").forEach { opcion ->
                         Button(
                             onClick = {
+                                // Actualizo la opción elegida.
                                 patron = opcion
+
+                                // Pido retirar el error anterior del patrón.
                                 viewModel.limpiarErrorPatron()
                             },
                             enabled = puedeEditar,
@@ -342,6 +403,7 @@ fun RegistroDiarioScreen(
                     }
                 }
 
+                // El error viene del estado publicado por el ViewModel.
                 ErrorBitacora(
                     mensaje = estado.errorPatron
                 )
@@ -397,8 +459,12 @@ fun RegistroDiarioScreen(
 
             TarjetaBitacora(titulo = "📝 Detalles y notas") {
                 OutlinedTextField(
+                    // Muestro el texto actual.
                     value = notas,
+
+                    // Cuando escribe, actualizo las notas del formulario.
                     onValueChange = { notas = it },
+
                     label = {
                         Text("Observaciones adicionales (opcional)")
                     },
@@ -418,6 +484,9 @@ fun RegistroDiarioScreen(
                     onClick = {
                         focusManager.clearFocus()
                         errorFoto = null
+
+                        // Antes de abrir la cámara,
+                        // muestro las indicaciones.
                         mostrarIndicaciones = true
                     },
                     enabled = puedeEditar,
@@ -432,6 +501,7 @@ fun RegistroDiarioScreen(
                         errorFoto = null
 
                         try {
+                            // Abro el selector de imágenes.
                             galleryLauncher.launch("image/*")
                         } catch (e: Exception) {
                             errorFoto = "No se pudo abrir la galería."
@@ -454,6 +524,7 @@ fun RegistroDiarioScreen(
 
             ErrorBitacora(mensaje = errorFoto)
 
+            // Si existe una ruta de fotografía, muestro su vista previa.
             imagen?.let { ruta ->
                 TarjetaBitacora(
                     titulo = "Fotografía seleccionada"
@@ -468,6 +539,8 @@ fun RegistroDiarioScreen(
 
                     OutlinedButton(
                         onClick = {
+                            // Quito la fotografía del formulario.
+                            // El cambio del registro se confirma al guardar.
                             imagen = null
                             errorFoto = null
                         },
@@ -493,6 +566,9 @@ fun RegistroDiarioScreen(
                 onClick = {
                     focusManager.clearFocus()
 
+                    // CONEXIÓN VISTA -> VIEWMODEL:
+                    // entrego los valores para que sean revisados
+                    // y se solicite su guardado.
                     viewModel.guardarRegistro(
                         patron = patron,
                         estadoAnimo = estadoAnimo,
@@ -511,6 +587,7 @@ fun RegistroDiarioScreen(
                     containerColor = morado
                 )
             ) {
+                // El botón informa qué está ocurriendo.
                 Text(
                     text = when {
                         estado.eliminando -> "Eliminando…"
@@ -524,11 +601,14 @@ fun RegistroDiarioScreen(
                 )
             }
 
+            // Solo ofrezco eliminar cuando existe un registro guardado.
             if (estado.registro != null) {
                 OutlinedButton(
                     onClick = {
                         focusManager.clearFocus()
                         viewModel.limpiarError()
+
+                        // Primero pido confirmación.
                         mostrarEliminar = true
                     },
                     enabled = puedeEditar,
@@ -556,6 +636,7 @@ fun RegistroDiarioScreen(
         }
     }
 
+    // Indicaciones que se muestran antes de abrir la cámara.
     if (mostrarIndicaciones) {
         AlertDialog(
             onDismissRequest = {
@@ -578,6 +659,7 @@ fun RegistroDiarioScreen(
                     onClick = {
                         mostrarIndicaciones = false
 
+                        // Compruebo si el permiso ya fue concedido.
                         val permitido =
                             ContextCompat.checkSelfPermission(
                                 context,
@@ -587,6 +669,7 @@ fun RegistroDiarioScreen(
                         if (permitido) {
                             mostrarCamara = true
                         } else {
+                            // Si falta, solicito el permiso.
                             permisoCamara.launch(
                                 Manifest.permission.CAMERA
                             )
@@ -611,6 +694,8 @@ fun RegistroDiarioScreen(
     if (mostrarCamara) {
         CamaraFrontalEVA(
             onFoto = { ruta ->
+                // La cámara devuelve la ruta del archivo creado.
+                // La selecciono y cierro la cámara.
                 imagen = ruta
                 errorFoto = null
                 mostrarCamara = false
@@ -621,6 +706,7 @@ fun RegistroDiarioScreen(
         )
     }
 
+    // Confirmación previa a eliminar.
     if (mostrarEliminar && !estado.eliminado) {
         AlertDialog(
             onDismissRequest = {
@@ -655,6 +741,7 @@ fun RegistroDiarioScreen(
             },
             confirmButton = {
                 TextButton(
+                    // Al confirmar, solicito eliminar al ViewModel.
                     onClick = viewModel::eliminarRegistro,
                     enabled = !estado.eliminando,
                     colors = ButtonDefaults.textButtonColors(
@@ -684,6 +771,8 @@ fun RegistroDiarioScreen(
         )
     }
 
+    // REGRESO A LA VISTA:
+    // el ViewModel informa el éxito y la pantalla lo presenta.
     if (estado.guardado) {
         AlertDialog(
             onDismissRequest = onVolver,
@@ -704,8 +793,10 @@ fun RegistroDiarioScreen(
     }
 }
 
+// Reutilizo este componente para presentar los errores.
 @Composable
 private fun ErrorBitacora(mensaje: String?) {
+    // El mensaje aparece o desaparece con animación.
     AnimatedVisibility(visible = mensaje != null) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -727,6 +818,8 @@ private fun ErrorBitacora(mensaje: String?) {
     }
 }
 
+// Reutilizo la misma presentación de tarjeta
+// para las distintas secciones del formulario.
 @Composable
 private fun TarjetaBitacora(
     titulo: String,
@@ -753,6 +846,7 @@ private fun TarjetaBitacora(
                 color = Color(0xFF56328B)
             )
 
+            // Aquí se coloca el contenido particular de cada tarjeta.
             contenido()
         }
     }
