@@ -1,0 +1,15 @@
+# Rutas directas hacia los servicios. Se reenvía la ruta completa.
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: usuarios-service
+              uri: ${USUARIOS_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/usuarios/**
+            - id: seguimiento-service
+              uri: ${SEGUIMIENTO_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/seguimiento/**
