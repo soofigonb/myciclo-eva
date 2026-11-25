@@ -1,0 +1,30 @@
+name: myciclo-eva
+
+services:
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    environment:
+      SERVER_PORT: "8080"
+      USUARIOS_SERVICE_URL: http://usuarios-service:8081
+      SEGUIMIENTO_SERVICE_URL: http://seguimiento-service:8082
+    depends_on:
+      - usuarios-service
+      - seguimiento-service
+
+  usuarios-service:
+    build: ./usuarios-service
+    env_file:
+      - path: ./usuarios-service/.env
+        required: false
+    environment:
+      SERVER_PORT: "8081"
+
+  seguimiento-service:
+    build: ./seguimiento-service
+    env_file:
+      - path: ./seguimiento-service/.env
+        required: false
+    environment:
+      SERVER_PORT: "8082"
