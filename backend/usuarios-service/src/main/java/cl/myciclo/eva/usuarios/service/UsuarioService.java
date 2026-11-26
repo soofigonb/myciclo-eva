@@ -35,66 +35,68 @@ public class UsuarioService {
     }
 
     @Transactional
-    public PerfilResponse registrar(RegistroRequest solicitud) {
-        String correoNormalizado = normalizarCorreo(solicitud.correo());
+    public PerfilResponse registrar(RegistroRequest request) {
+        String correoNormalizado = normalizarCorreo(request.correo());
         if (usuarioRepository.existsByCorreo(correoNormalizado)) {
             throw new CorreoYaRegistradoException("Ya existe una cuenta registrada con ese correo.");
         }
 
+        String hash = passwordEncoder.encode(request.contrasena());
         Usuario nuevo = new Usuario(
-                solicitud.nombre().trim(),
+                request.nombre().trim(),
                 correoNormalizado,
-                passwordEncoder.encode(solicitud.contrasena()),
-                solicitud.fechaNacimiento()
+                hash,
+                request.fechaNacimiento()
         );
 
         Usuario guardado = usuarioRepository.save(nuevo);
-        return aPerfilResponse(guardado);
+        return mapearPerfil(guardado);
     }
 
     @Transactional(readOnly = true)
-    public LoginResponse iniciarSesion(LoginRequest solicitud) {
-        String correoNormalizado = normalizarCorreo(solicitud.correo());
+    public LoginResponse iniciarSesion(LoginRequest request) {
+        String correoNormalizado = normalizarCorreo(request.correo());
         Usuario usuario = usuarioRepository.findByCorreo(correoNormalizado)
                 .orElseThrow(() -> new CredencialesInvalidasException("Correo o contraseña incorrectos."));
 
-        if (!passwordEncoder.matches(solicitud.contrasena(), usuario.getContrasenaHash())) {
+        if (!passwordEncoder.matches(request.contrasena(), usuario.getContrasenaHash())) {
             throw new CredencialesInvalidasException("Correo o contraseña incorrectos.");
         }
 
-        String token = jwtTokenService.emitirToken(usuario);
+        String token = jwtTokenService.generarToken(usuario.getId(), usuario.getCorreo());
         return new LoginResponse(
                 token,
                 "Bearer",
-                jwtTokenService.obtenerExpiracionSegundos(),
-                aPerfilResponse(usuario)
+                jwtTokenService.getExpirationSeconds(),
+                mapearPerfil(usuario)
         );
     }
 
     @Transactional(readOnly = true)
     public PerfilResponse obtenerPerfil(Long usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new UsuarioNoEncontradoException("No se encontró el usuario autenticado."));
-        return aPerfilResponse(usuario);
+        Usuario usuario = buscarUsuarioPorId(usuarioId);
+        return mapearPerfil(usuario);
     }
 
     @Transactional
-    public PerfilResponse actualizarPerfil(Long usuarioId, ActualizarPerfilRequest solicitud) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new UsuarioNoEncontradoException("No se encontró el usuario autenticado."));
-
-        usuario.setNombre(solicitud.nombre().trim());
-        usuario.setFechaNacimiento(solicitud.fechaNacimiento());
-
+    public PerfilResponse actualizarPerfil(Long usuarioId, ActualizarPerfilRequest request) {
+        Usuario usuario = buscarUsuarioPorId(usuarioId);
+        usuario.setNombre(request.nombre().trim());
+        usuario.setFechaNacimiento(request.fechaNacimiento());
         Usuario actualizado = usuarioRepository.save(usuario);
-        return aPerfilResponse(actualizado);
+        return mapearPerfil(actualizado);
+    }
+
+    private Usuario buscarUsuarioPorId(Long usuarioId) {
+        return usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado."));
     }
 
     private String normalizarCorreo(String correo) {
-        return correo.trim().toLowerCase(Locale.ROOT);
+        return correo == null ? "" : correo.trim().toLowerCase(Locale.ROOT);
     }
 
-    private PerfilResponse aPerfilResponse(Usuario usuario) {
+    private PerfilResponse mapearPerfil(Usuario usuario) {
         return new PerfilResponse(
                 usuario.getId(),
                 usuario.getNombre(),

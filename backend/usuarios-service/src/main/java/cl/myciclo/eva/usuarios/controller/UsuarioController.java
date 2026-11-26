@@ -1,6 +1,5 @@
 package cl.myciclo.eva.usuarios.controller;
 
-import cl.myciclo.eva.usuarios.config.OpenApiConfig;
 import cl.myciclo.eva.usuarios.dto.ActualizarPerfilRequest;
 import cl.myciclo.eva.usuarios.dto.LoginRequest;
 import cl.myciclo.eva.usuarios.dto.LoginResponse;
@@ -13,8 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/usuarios")
-@Tag(name = "Usuarios", description = "Endpoints de autenticacion y gestion de perfil")
+@Tag(name = "Usuarios", description = "Registro, autenticación y perfil de usuario")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
@@ -34,41 +32,44 @@ public class UsuarioController {
     }
 
     @PostMapping("/registro")
-    @Operation(summary = "Registrar nueva cuenta de usuario")
-    public ResponseEntity<PerfilResponse> registrar(@Valid @RequestBody RegistroRequest solicitud) {
-        PerfilResponse nuevo = usuarioService.registrar(solicitud);
-        return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
+    @Operation(summary = "Registrar nueva cuenta")
+    public ResponseEntity<PerfilResponse> registrar(@Valid @RequestBody RegistroRequest request) {
+        PerfilResponse respuesta = usuarioService.registrar(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Iniciar sesion y obtener token JWT")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest solicitud) {
-        LoginResponse respuesta = usuarioService.iniciarSesion(solicitud);
+    @Operation(summary = "Iniciar sesión y obtener token")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse respuesta = usuarioService.iniciarSesion(request);
         return ResponseEntity.ok(respuesta);
     }
 
     @GetMapping("/perfil")
-    @Operation(
-            summary = "Obtener datos del perfil autenticado",
-            security = @SecurityRequirement(name = OpenApiConfig.ESQUEMA_BEARER)
-    )
-    public ResponseEntity<PerfilResponse> obtenerPerfil(@AuthenticationPrincipal Jwt jwt) {
-        Long usuarioId = Long.valueOf(jwt.getSubject());
-        PerfilResponse perfil = usuarioService.obtenerPerfil(usuarioId);
-        return ResponseEntity.ok(perfil);
+    @Operation(summary = "Consultar perfil autenticado", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<PerfilResponse> obtenerPerfil(Authentication authentication) {
+        Long usuarioId = extraerUsuarioId(authentication);
+        return ResponseEntity.ok(usuarioService.obtenerPerfil(usuarioId));
     }
 
     @PutMapping("/perfil")
-    @Operation(
-            summary = "Actualizar datos del perfil autenticado",
-            security = @SecurityRequirement(name = OpenApiConfig.ESQUEMA_BEARER)
-    )
+    @Operation(summary = "Actualizar perfil autenticado", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<PerfilResponse> actualizarPerfil(
-            @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody ActualizarPerfilRequest solicitud
+            Authentication authentication,
+            @Valid @RequestBody ActualizarPerfilRequest request
     ) {
-        Long usuarioId = Long.valueOf(jwt.getSubject());
-        PerfilResponse perfil = usuarioService.actualizarPerfil(usuarioId, solicitud);
-        return ResponseEntity.ok(perfil);
+        Long usuarioId = extraerUsuarioId(authentication);
+        return ResponseEntity.ok(usuarioService.actualizarPerfil(usuarioId, request));
+    }
+
+    private Long extraerUsuarioId(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new IllegalStateException("Sesión no autenticada.");
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Long id) {
+            return id;
+        }
+        return Long.parseLong(principal.toString());
     }
 }
