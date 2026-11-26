@@ -1,6 +1,5 @@
 package cl.myciclo.eva.usuarios.controller;
 
-import cl.myciclo.eva.usuarios.config.OpenApiConfig;
 import cl.myciclo.eva.usuarios.dto.ActualizarPerfilRequest;
 import cl.myciclo.eva.usuarios.dto.LoginRequest;
 import cl.myciclo.eva.usuarios.dto.LoginResponse;
@@ -8,13 +7,11 @@ import cl.myciclo.eva.usuarios.dto.PerfilResponse;
 import cl.myciclo.eva.usuarios.dto.RegistroRequest;
 import cl.myciclo.eva.usuarios.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -48,26 +45,20 @@ public class UsuarioController {
     }
 
     @GetMapping("/perfil")
-    @Operation(
-            summary = "Obtener datos del perfil autenticado",
-            security = @SecurityRequirement(name = OpenApiConfig.ESQUEMA_BEARER)
-    )
-    public ResponseEntity<PerfilResponse> obtenerPerfil(@AuthenticationPrincipal Jwt jwt) {
-        Long usuarioId = Long.valueOf(jwt.getSubject());
+    @Operation(summary = "Obtener datos del perfil autenticado")
+    public ResponseEntity<PerfilResponse> obtenerPerfil(Authentication authentication) {
+        Long usuarioId = (Long) authentication.getPrincipal();
         PerfilResponse perfil = usuarioService.obtenerPerfil(usuarioId);
         return ResponseEntity.ok(perfil);
     }
 
     @PutMapping("/perfil")
-    @Operation(
-            summary = "Actualizar datos del perfil autenticado",
-            security = @SecurityRequirement(name = OpenApiConfig.ESQUEMA_BEARER)
-    )
+    @Operation(summary = "Actualizar datos del perfil autenticado")
     public ResponseEntity<PerfilResponse> actualizarPerfil(
-            @AuthenticationPrincipal Jwt jwt,
+            Authentication authentication,
             @Valid @RequestBody ActualizarPerfilRequest solicitud
     ) {
-        Long usuarioId = Long.valueOf(jwt.getSubject());
+        Long usuarioId = (Long) authentication.getPrincipal();
         PerfilResponse perfil = usuarioService.actualizarPerfil(usuarioId, solicitud);
         return ResponseEntity.ok(perfil);
     }

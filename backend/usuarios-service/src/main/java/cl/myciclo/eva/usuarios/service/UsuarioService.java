@@ -62,11 +62,11 @@ public class UsuarioService {
             throw new CredencialesInvalidasException("Correo o contraseña incorrectos.");
         }
 
-        String token = jwtTokenService.emitirToken(usuario);
+        String token = jwtTokenService.generarToken(usuario.getId(), usuario.getCorreo());
         return new LoginResponse(
                 token,
                 "Bearer",
-                jwtTokenService.obtenerExpiracionSegundos(),
+                jwtTokenService.getExpirationSeconds(),
                 aPerfilResponse(usuario)
         );
     }
